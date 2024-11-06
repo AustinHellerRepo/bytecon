@@ -2,6 +2,13 @@
 name = "bytecon"
 version = "0.1.0"
 edition = "2021"
+authors = ["Austin Heller"]
+description = "A trait for easily converting to-and-from an array of bytes."
+readme = "README.md"
+repository = "https://github.com/AustinHellerRepo/bytecon"
+license = "MIT OR Apache-2.0"
+keywords = ["encoding", "trait", "serialization", "networking", "streaming"]
+categories = ["encoding"]
 
 [features]
 default = []
