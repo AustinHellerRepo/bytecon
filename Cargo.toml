@@ -1,0 +1,12 @@
+[package]
+name = "bytecon"
+version = "0.1.0"
+edition = "2021"
+
+[features]
+default = []
+burn = ["dep:burn"]
+
+[dependencies]
+thiserror = { version = "2" }
+burn = { version = "0.14", optional = true }
