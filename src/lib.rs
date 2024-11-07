@@ -1,4 +1,4 @@
-use std::error::Error;
+use std::{error::Error, future::Future};
 
 // TODO add a version byte at the front of each append_to_bytes call
 //      this can be used to match on within the extract so that changes in format across versions of this crate are unaffected
@@ -6,13 +6,32 @@ use std::error::Error;
 #[cfg(feature = "burn")]
 pub mod burn;
 
-trait ByteCon {
+#[cfg(feature = "tokio")]
+pub mod tokio;
+
+trait ByteConverter {
     fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error>>;
     fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error>> where Self: Sized;
 }
 
+trait ByteStreamReader {
+    fn read_to_byte_converter<T: ByteConverter>(&mut self) -> Result<T, Box<dyn Error>>;
+}
+
+trait ByteStreamReaderAsync {
+    fn read_to_byte_converter<T: ByteConverter>(&mut self) -> impl Future<Output = Result<T, Box<dyn Error>>>;
+}
+
+trait ByteStreamWriter {
+    fn write_from_byte_converter(&mut self, byte_converter: impl ByteConverter) -> Result<(), Box<dyn Error>>;
+}
+
+trait ByteStreamWriterAsync {
+    fn write_from_byte_converter(&mut self, byte_converter: impl ByteConverter) -> impl Future<Output = Result<(), Box<dyn Error>>>;
+}
+
 #[derive(thiserror::Error, Debug)]
-enum ByteConError {
+enum ByteConverterError {
     #[error("Index {index} out of range of bytes array with length {length}.")]
     IndexOutOfRange {
         index: usize,
@@ -35,7 +54,7 @@ fn get_single_byte(bytes: &Vec<u8>, index: &mut usize) -> Result<u8, Box<dyn Err
     let index_deref = *index;
     let next_index = index_deref + 1;
     if bytes_length < next_index {
-        return Err(ByteConError::IndexOutOfRange {
+        return Err(ByteConverterError::IndexOutOfRange {
             index: next_index,
             length: bytes_length,
         }.into());
@@ -50,7 +69,7 @@ fn get_multiple_bytes<'a>(bytes: &'a Vec<u8>, index: &mut usize, size: usize) ->
     let index_deref = *index;
     let next_index = index_deref + size;
     if bytes_length < next_index {
-        return Err(ByteConError::IndexOutOfRange {
+        return Err(ByteConverterError::IndexOutOfRange {
             index: next_index,
             length: bytes_length,
         }.into());
@@ -60,7 +79,7 @@ fn get_multiple_bytes<'a>(bytes: &'a Vec<u8>, index: &mut usize, size: usize) ->
     Ok(multiple_bytes)
 }
 
-impl ByteCon for bool {
+impl ByteConverter for bool {
     fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error>> {
 
         // byte
@@ -76,7 +95,7 @@ impl ByteCon for bool {
             0 => false,
             1 => true,
             _ => {
-                return Err(ByteConError::UnexpectedByteValueForBoolean {
+                return Err(ByteConverterError::UnexpectedByteValueForBoolean {
                     byte_value: byte,
                 }.into());
             },
@@ -86,7 +105,7 @@ impl ByteCon for bool {
     }
 }
 
-impl ByteCon for f32 {
+impl ByteConverter for f32 {
     fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error>> {
         
         // f32
@@ -102,7 +121,7 @@ impl ByteCon for f32 {
     }
 }
 
-impl ByteCon for i8 {
+impl ByteConverter for i8 {
     fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error>> {
         
         // i8
@@ -117,7 +136,7 @@ impl ByteCon for i8 {
     }
 }
 
-impl ByteCon for String {
+impl ByteConverter for String {
     fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error>> {
         let string_bytes = self.as_bytes();
         let string_bytes_length = string_bytes.len();
@@ -141,7 +160,7 @@ impl ByteCon for String {
     }
 }
 
-impl ByteCon for u8 {
+impl ByteConverter for u8 {
     fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error>> {
         bytes.push(*self);
         Ok(())
@@ -152,7 +171,7 @@ impl ByteCon for u8 {
     }
 }
 
-impl ByteCon for usize {
+impl ByteConverter for usize {
     fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error>> {
 
         if cfg!(target_pointer_width = "64") {
@@ -176,7 +195,7 @@ impl ByteCon for usize {
         let usize_length = get_single_byte(bytes, index)? as usize;
 
         if !cfg!(target_pointer_width = "64") && usize_length == 8 {
-            return Err(ByteConError::FailedToExtractSixtyFourBitUsize.into());
+            return Err(ByteConverterError::FailedToExtractSixtyFourBitUsize.into());
         }
 
         let usize_bytes = get_multiple_bytes(bytes, index, usize_length)?;
@@ -189,7 +208,7 @@ impl ByteCon for usize {
                 usize::try_from(u32::from_le_bytes(usize_bytes.try_into().expect("Failed to splice out bytes."))).expect("Failed to cast 4 bytes to usize.")
             },
             _ => {
-                return Err(ByteConError::UnexpectedSizeOfUsize {
+                return Err(ByteConverterError::UnexpectedSizeOfUsize {
                     bytes_length: usize_length,
                 }.into());
             }
@@ -199,7 +218,7 @@ impl ByteCon for usize {
     }
 }
 
-impl<T: ByteCon> ByteCon for Vec<T> {
+impl<T: ByteConverter> ByteConverter for Vec<T> {
     fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error>> {
 
         // usize
@@ -301,3 +320,44 @@ impl<T: ByteCon> ByteCon for Vec<T> {
 //        Ok(list)
 //    }
 //}
+
+impl<TRead: std::io::Read> ByteStreamReader for TRead {
+    fn read_to_byte_converter<T: ByteConverter>(&mut self) -> Result<T, Box<dyn std::error::Error>> {
+        let mut bytes = Vec::new();
+        let mut chunk = [0u8; 64];
+
+        let mut initial_packet = [0u8; 8];
+        let read_result = self.read_exact(&mut initial_packet);
+        if let Err(error) = read_result {
+            let result: Result<T, Box<dyn Error>> = Err(Box::new(error));
+            return result;
+        }
+
+        let expected_bytes_length: u64 = u64::from_le_bytes(initial_packet);
+        while (bytes.len() as u64) < expected_bytes_length {
+            let read_bytes_length_result = self.read(&mut chunk);
+            if let Err(error) = read_bytes_length_result {
+                let result: Result<T, Box<dyn Error>> = Err(Box::new(error));
+                return result;
+            }
+
+            let read_bytes_length = read_bytes_length_result.unwrap();
+
+            if read_bytes_length != 0 {
+                bytes.extend_from_slice(&chunk[..read_bytes_length]);
+            }
+        }
+
+        let mut index = 0;
+        T::extract_from_bytes(&bytes, &mut index)
+    }
+}
+
+impl<TWrite: std::io::Write> ByteStreamWriter for TWrite {
+    fn write_from_byte_converter(&mut self, byte_converter: impl ByteConverter) -> Result<(), Box<dyn Error>> {
+        let mut stream_bytes = Vec::new();
+        byte_converter.append_to_bytes(&mut stream_bytes)?;
+        self.write(&stream_bytes)?;
+        Ok(())
+    }
+}

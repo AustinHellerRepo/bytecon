@@ -1,8 +1,8 @@
 use std::error::Error;
 use burn::tensor::{quantization::{AffineQuantization, SymmetricQuantization}, DType, TensorData};
-use crate::ByteCon;
+use crate::ByteConverter;
 
-impl ByteCon for DType {
+impl ByteConverter for DType {
     fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error>> {
 
         // enum variant byte
@@ -139,7 +139,7 @@ impl ByteCon for DType {
     }
 }
 
-impl ByteCon for TensorData {
+impl ByteConverter for TensorData {
     fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error>> {
 
         // slice
