@@ -510,7 +510,7 @@ dependencies = [
 
 [[package]]
 name = "bytecon"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "burn",
  "rustls 0.21.12",

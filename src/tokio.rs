@@ -1,9 +1,9 @@
 use std::error::Error;
-use tokio::{io::{AsyncRead, AsyncReadExt, AsyncWriteExt}, net::TcpStream};
+use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
 use tokio_rustls::TlsStream;
 use crate::{ByteConverter, ByteStreamReaderAsync, ByteStreamWriterAsync};
 
-impl<TAsyncRead: AsyncRead + std::marker::Unpin> ByteStreamReaderAsync for TAsyncRead {
+impl<TStream: AsyncWrite + AsyncRead + Unpin> ByteStreamReaderAsync for TlsStream<TStream> {
     async fn read_to_byte_converter<T: ByteConverter>(&mut self) -> Result<T, Box<dyn std::error::Error>> {
         let mut bytes = Vec::new();
         let mut chunk = [0u8; 64];
@@ -37,7 +37,7 @@ impl<TAsyncRead: AsyncRead + std::marker::Unpin> ByteStreamReaderAsync for TAsyn
     }
 }
 
-impl ByteStreamWriterAsync for TlsStream<TcpStream> {
+impl<TStream: AsyncWrite + AsyncRead + Unpin> ByteStreamWriterAsync for TlsStream<TStream> {
     async fn write_from_byte_converter(&mut self, byte_converter: impl crate::ByteConverter) -> Result<(), Box<dyn Error>> {
         let mut stream_bytes = Vec::new();
         byte_converter.append_to_bytes(&mut stream_bytes)?;

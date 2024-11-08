@@ -9,24 +9,24 @@ pub mod burn;
 #[cfg(feature = "tokio")]
 pub mod tokio;
 
-trait ByteConverter {
+pub trait ByteConverter {
     fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error>>;
     fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error>> where Self: Sized;
 }
 
-trait ByteStreamReader {
+pub trait ByteStreamReader {
     fn read_to_byte_converter<T: ByteConverter>(&mut self) -> Result<T, Box<dyn Error>>;
 }
 
-trait ByteStreamReaderAsync {
+pub trait ByteStreamReaderAsync {
     fn read_to_byte_converter<T: ByteConverter>(&mut self) -> impl Future<Output = Result<T, Box<dyn Error>>>;
 }
 
-trait ByteStreamWriter {
+pub trait ByteStreamWriter {
     fn write_from_byte_converter(&mut self, byte_converter: impl ByteConverter) -> Result<(), Box<dyn Error>>;
 }
 
-trait ByteStreamWriterAsync {
+pub trait ByteStreamWriterAsync {
     fn write_from_byte_converter(&mut self, byte_converter: impl ByteConverter) -> impl Future<Output = Result<(), Box<dyn Error>>>;
 }
 
