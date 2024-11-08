@@ -6,8 +6,14 @@ use std::{error::Error, future::Future};
 #[cfg(feature = "burn")]
 pub mod burn;
 
+#[cfg(feature = "burn_dtype")]
+pub mod burn_dtype;
+
 #[cfg(feature = "tokio")]
 pub mod tokio;
+
+#[cfg(all(feature = "bincode", not(feature = "burn_dtype")))]
+pub mod bincode;
 
 pub trait ByteConverter {
     fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error>>;

@@ -6,11 +6,18 @@ Allows for the convenient conversion of types from and to arrays of bytes.
   * Usage of the ByteCon trait allows for appending and extracting bytes from a byte array. This is very useful for interacting with a byte stream.
 * `"burn"`
   * Contains implementations for the `burn` crate.
+    * Excludes: `DType`
+* `"burn_dtype"`
+  * Contains the specific implementation for the `burn` crate's `DType` type since it can conflict with the `"bincode"` feature.
+  * Only use this feature if you are NOT using `"bincode"`.
 * `"tokio"`
   * Contains implementations for the `tokio` crate.
     * `TlsStream<T: AsyncWrite + AsyncRead + Unpin>
     * `Sender<Vec<u8>>`
     * `Receiver<Vec<u8>>`
+* `"bincode"`
+  * Contains implementations for the `bincode` crate.
+  * This feature conflicts with the `"burn_dtype"` feature.
  
 # Coming soon
 * Additional implementations for other common crates
