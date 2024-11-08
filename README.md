@@ -12,7 +12,7 @@ Allows for the convenient conversion of types from and to arrays of bytes.
   * Only use this feature if you are NOT using `"bincode"`.
 * `"tokio"`
   * Contains implementations for the `tokio` crate.
-    * `TlsStream<T: AsyncWrite + AsyncRead + Unpin>
+    * `TlsStream<T: AsyncWrite + AsyncRead + Unpin>`
     * `Sender<Vec<u8>>`
     * `Receiver<Vec<u8>>`
 * `"bincode"`
