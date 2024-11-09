@@ -53,6 +53,11 @@ enum ByteConverterError {
     UnexpectedByteValueForBoolean {
         byte_value: u8,
     },
+    #[error("Failed to convert from {from_type} to {to_type}.")]
+    FailedToConvertToType {
+        from_type: String,
+        to_type: String,
+    },
 }
 
 fn get_single_byte(bytes: &Vec<u8>, index: &mut usize) -> Result<u8, Box<dyn Error>> {
@@ -111,6 +116,25 @@ impl ByteConverter for bool {
     }
 }
 
+impl ByteConverter for char {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error>> {
+        
+        // char as u32
+        ((*self) as u32).append_to_bytes(bytes)?;
+        Ok(())
+    }
+    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error>> where Self: Sized {
+        
+        // char as u32
+        let char_value = char::from_u32(u32::extract_from_bytes(bytes, index)?)
+            .ok_or(ByteConverterError::FailedToConvertToType {
+                from_type: String::from(std::any::type_name::<u32>()),
+                to_type: String::from(std::any::type_name::<char>()),
+            })?;
+        Ok(char_value)
+    }
+}
+
 impl ByteConverter for f32 {
     fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error>> {
         
@@ -122,7 +146,23 @@ impl ByteConverter for f32 {
         
         // f32
         let float_bytes = get_multiple_bytes(bytes, index, 4)?;
-        let float = f32::from_le_bytes(float_bytes.try_into().expect("Failed to splice out bytes."));
+        let float = f32::from_le_bytes(float_bytes.try_into()?);
+        Ok(float)
+    }
+}
+
+impl ByteConverter for f64 {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error>> {
+        
+        // f64
+        bytes.extend_from_slice(&self.to_le_bytes());
+        Ok(())
+    }
+    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error>> where Self: Sized {
+        
+        // f64
+        let float_bytes = get_multiple_bytes(bytes, index, 8)?;
+        let float = f64::from_le_bytes(float_bytes.try_into()?);
         Ok(float)
     }
 }
@@ -130,15 +170,84 @@ impl ByteConverter for f32 {
 impl ByteConverter for i8 {
     fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error>> {
         
-        // i8
-        bytes.push((*self) as u8);
+        // i8 as u8
+        ((*self) as u8).append_to_bytes(bytes)?;
         Ok(())
     }
     fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error>> where Self: Sized {
         
-        let u8_byte = get_single_byte(bytes, index)?;
-        let i8_byte = u8_byte as i8;
-        Ok(i8_byte)
+        // i8 as u8
+        Ok(u8::extract_from_bytes(bytes, index)? as i8)
+    }
+}
+
+impl ByteConverter for i16 {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error>> {
+        
+        // i16 as u16
+        ((*self) as u16).append_to_bytes(bytes)?;
+        Ok(())
+    }
+    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error>> where Self: Sized {
+        
+        // i16 as u16
+        Ok(u16::extract_from_bytes(bytes, index)? as i16)
+    }
+}
+
+impl ByteConverter for i32 {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error>> {
+        
+        // i32 as u32
+        ((*self) as u32).append_to_bytes(bytes)?;
+        Ok(())
+    }
+    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error>> where Self: Sized {
+        
+        // i32 as u32
+        Ok(u32::extract_from_bytes(bytes, index)? as i32)
+    }
+}
+
+impl ByteConverter for i64 {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error>> {
+        
+        // i64 as u64
+        ((*self) as u64).append_to_bytes(bytes)?;
+        Ok(())
+    }
+    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error>> where Self: Sized {
+        
+        // i64 as u64
+        Ok(u64::extract_from_bytes(bytes, index)? as i64)
+    }
+}
+
+impl ByteConverter for i128 {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error>> {
+        
+        // i128 as u128
+        ((*self) as u128).append_to_bytes(bytes)?;
+        Ok(())
+    }
+    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error>> where Self: Sized {
+        
+        // i128 as u128
+        Ok(u128::extract_from_bytes(bytes, index)? as i128)
+    }
+}
+
+impl ByteConverter for isize {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error>> {
+        
+        // isize as usize
+        ((*self) as usize).append_to_bytes(bytes)?;
+        Ok(())
+    }
+    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error>> where Self: Sized {
+        
+        // isize as usize
+        Ok(usize::extract_from_bytes(bytes, index)? as isize)
     }
 }
 
@@ -162,7 +271,7 @@ impl ByteConverter for String {
         // slice
         let string_bytes = get_multiple_bytes(bytes, index, string_bytes_length)?;
 
-        Ok(Self::from_utf8(string_bytes.to_vec()).expect("Failed to convert bytes to a String."))
+        Ok(Self::from_utf8(string_bytes.to_vec())?)
     }
 }
 
@@ -177,6 +286,50 @@ impl ByteConverter for u8 {
     }
 }
 
+impl ByteConverter for u16 {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error>> {
+        bytes.extend_from_slice(&self.to_le_bytes());
+        Ok(())
+    }
+    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error>> where Self: Sized {
+        let u16_bytes = get_multiple_bytes(bytes, index, 2)?;
+        Ok(u16::from_le_bytes(u16_bytes.try_into()?))
+    }
+}
+
+impl ByteConverter for u32 {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error>> {
+        bytes.extend_from_slice(&self.to_le_bytes());
+        Ok(())
+    }
+    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error>> where Self: Sized {
+        let u32_bytes = get_multiple_bytes(bytes, index, 4)?;
+        Ok(u32::from_le_bytes(u32_bytes.try_into()?))
+    }
+}
+
+impl ByteConverter for u64 {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error>> {
+        bytes.extend_from_slice(&self.to_le_bytes());
+        Ok(())
+    }
+    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error>> where Self: Sized {
+        let u64_bytes = get_multiple_bytes(bytes, index, 8)?;
+        Ok(u64::from_le_bytes(u64_bytes.try_into()?))
+    }
+}
+
+impl ByteConverter for u128 {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error>> {
+        bytes.extend_from_slice(&self.to_le_bytes());
+        Ok(())
+    }
+    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error>> where Self: Sized {
+        let u128_bytes = get_multiple_bytes(bytes, index, 16)?;
+        Ok(u128::from_le_bytes(u128_bytes.try_into()?))
+    }
+}
+
 impl ByteConverter for usize {
     fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error>> {
 
@@ -184,34 +337,37 @@ impl ByteConverter for usize {
             // byte
             bytes.push(8);
 
-            // 8 bytes
-            bytes.extend(&(*self as u64).to_le_bytes());
+            // u64
+            ((*self) as u64).append_to_bytes(bytes)?;
         }
         else {
             // byte
             bytes.push(4);
 
-            // 4 bytes
-            bytes.extend(&(*self as u32).to_le_bytes());
+            // u32
+            ((*self) as u32).append_to_bytes(bytes)?;
         }
         Ok(())
     }
     fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error>> where Self: Sized {
         
+        // byte
         let usize_length = get_single_byte(bytes, index)? as usize;
 
         if !cfg!(target_pointer_width = "64") && usize_length == 8 {
             return Err(ByteConverterError::FailedToExtractSixtyFourBitUsize.into());
         }
 
-        let usize_bytes = get_multiple_bytes(bytes, index, usize_length)?;
-
         let usize_value = match usize_length {
             8 => {
-                usize::try_from(u64::from_le_bytes(usize_bytes.try_into().expect("Failed to splice out bytes."))).expect("Failed to cast 8 bytes to usize.")
+                // u64
+                let u64_instance = u64::extract_from_bytes(bytes, index)?;
+                usize::try_from(u64_instance)?
             },
             4 => {
-                usize::try_from(u32::from_le_bytes(usize_bytes.try_into().expect("Failed to splice out bytes."))).expect("Failed to cast 4 bytes to usize.")
+                // u32
+                let u32_instance = u32::extract_from_bytes(bytes, index)?;
+                usize::try_from(u32_instance)?
             },
             _ => {
                 return Err(ByteConverterError::UnexpectedSizeOfUsize {
@@ -252,6 +408,63 @@ impl<T: ByteConverter> ByteConverter for Vec<T> {
         Ok(list)
     }
 }
+
+macro_rules! tuple_byte_converter {
+    ($($index:tt $t:tt),+) => {
+        paste::paste! {
+            impl<
+                $($t: ByteConverter),+
+            > ByteConverter for ($(
+                $t,
+            )+) {
+                fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error>> {
+                    $(
+                        self.$index.append_to_bytes(bytes)?;
+                    )*
+                    Ok(())
+                }
+                fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error>> where Self: Sized {
+                    $(
+                        let [<$t:lower>] = $t::extract_from_bytes(bytes, index)?;
+                    )*
+                    Ok((
+                        $(
+                            [<$t:lower>],
+                        )+
+                    ))
+                }
+            }
+        }
+    };
+}
+
+tuple_byte_converter!(0 T1);
+tuple_byte_converter!(0 T1, 1 T2);
+tuple_byte_converter!(0 T1, 1 T2, 2 T3);
+tuple_byte_converter!(0 T1, 1 T2, 2 T3, 3 T4);
+tuple_byte_converter!(0 T1, 1 T2, 2 T3, 3 T4, 4 T5);
+tuple_byte_converter!(0 T1, 1 T2, 2 T3, 3 T4, 4 T5, 5 T6);
+tuple_byte_converter!(0 T1, 1 T2, 2 T3, 3 T4, 4 T5, 5 T6, 6 T7);
+tuple_byte_converter!(0 T1, 1 T2, 2 T3, 3 T4, 4 T5, 5 T6, 6 T7, 7 T8);
+tuple_byte_converter!(0 T1, 1 T2, 2 T3, 3 T4, 4 T5, 5 T6, 6 T7, 7 T8, 8 T9);
+tuple_byte_converter!(0 T1, 1 T2, 2 T3, 3 T4, 4 T5, 5 T6, 6 T7, 7 T8, 8 T9, 9 T10);
+tuple_byte_converter!(0 T1, 1 T2, 2 T3, 3 T4, 4 T5, 5 T6, 6 T7, 7 T8, 8 T9, 9 T10, 10 T11);
+tuple_byte_converter!(0 T1, 1 T2, 2 T3, 3 T4, 4 T5, 5 T6, 6 T7, 7 T8, 8 T9, 9 T10, 10 T11, 11 T12);
+tuple_byte_converter!(0 T1, 1 T2, 2 T3, 3 T4, 4 T5, 5 T6, 6 T7, 7 T8, 8 T9, 9 T10, 10 T11, 11 T12, 12 T13);
+tuple_byte_converter!(0 T1, 1 T2, 2 T3, 3 T4, 4 T5, 5 T6, 6 T7, 7 T8, 8 T9, 9 T10, 10 T11, 11 T12, 12 T13, 13 T14);
+tuple_byte_converter!(0 T1, 1 T2, 2 T3, 3 T4, 4 T5, 5 T6, 6 T7, 7 T8, 8 T9, 9 T10, 10 T11, 11 T12, 12 T13, 13 T14, 14 T15);
+tuple_byte_converter!(0 T1, 1 T2, 2 T3, 3 T4, 4 T5, 5 T6, 6 T7, 7 T8, 8 T9, 9 T10, 10 T11, 11 T12, 12 T13, 13 T14, 14 T15, 15 T16);
+tuple_byte_converter!(0 T1, 1 T2, 2 T3, 3 T4, 4 T5, 5 T6, 6 T7, 7 T8, 8 T9, 9 T10, 10 T11, 11 T12, 12 T13, 13 T14, 14 T15, 15 T16, 16 T17);
+tuple_byte_converter!(0 T1, 1 T2, 2 T3, 3 T4, 4 T5, 5 T6, 6 T7, 7 T8, 8 T9, 9 T10, 10 T11, 11 T12, 12 T13, 13 T14, 14 T15, 15 T16, 16 T17, 17 T18);
+tuple_byte_converter!(0 T1, 1 T2, 2 T3, 3 T4, 4 T5, 5 T6, 6 T7, 7 T8, 8 T9, 9 T10, 10 T11, 11 T12, 12 T13, 13 T14, 14 T15, 15 T16, 16 T17, 17 T18, 18 T19);
+tuple_byte_converter!(0 T1, 1 T2, 2 T3, 3 T4, 4 T5, 5 T6, 6 T7, 7 T8, 8 T9, 9 T10, 10 T11, 11 T12, 12 T13, 13 T14, 14 T15, 15 T16, 16 T17, 17 T18, 18 T19, 19 T20);
+tuple_byte_converter!(0 T1, 1 T2, 2 T3, 3 T4, 4 T5, 5 T6, 6 T7, 7 T8, 8 T9, 9 T10, 10 T11, 11 T12, 12 T13, 13 T14, 14 T15, 15 T16, 16 T17, 17 T18, 18 T19, 19 T20, 20 T21);
+tuple_byte_converter!(0 T1, 1 T2, 2 T3, 3 T4, 4 T5, 5 T6, 6 T7, 7 T8, 8 T9, 9 T10, 10 T11, 11 T12, 12 T13, 13 T14, 14 T15, 15 T16, 16 T17, 17 T18, 18 T19, 19 T20, 20 T21, 21 T22);
+tuple_byte_converter!(0 T1, 1 T2, 2 T3, 3 T4, 4 T5, 5 T6, 6 T7, 7 T8, 8 T9, 9 T10, 10 T11, 11 T12, 12 T13, 13 T14, 14 T15, 15 T16, 16 T17, 17 T18, 18 T19, 19 T20, 20 T21, 21 T22, 22 T23);
+tuple_byte_converter!(0 T1, 1 T2, 2 T3, 3 T4, 4 T5, 5 T6, 6 T7, 7 T8, 8 T9, 9 T10, 10 T11, 11 T12, 12 T13, 13 T14, 14 T15, 15 T16, 16 T17, 17 T18, 18 T19, 19 T20, 20 T21, 21 T22, 22 T23, 23 T24);
+tuple_byte_converter!(0 T1, 1 T2, 2 T3, 3 T4, 4 T5, 5 T6, 6 T7, 7 T8, 8 T9, 9 T10, 10 T11, 11 T12, 12 T13, 13 T14, 14 T15, 15 T16, 16 T17, 17 T18, 18 T19, 19 T20, 20 T21, 21 T22, 22 T23, 23 T24, 24 T25);
+tuple_byte_converter!(0 T1, 1 T2, 2 T3, 3 T4, 4 T5, 5 T6, 6 T7, 7 T8, 8 T9, 9 T10, 10 T11, 11 T12, 12 T13, 13 T14, 14 T15, 15 T16, 16 T17, 17 T18, 18 T19, 19 T20, 20 T21, 21 T22, 22 T23, 23 T24, 24 T25, 25 T26);
+tuple_byte_converter!(0 T1, 1 T2, 2 T3, 3 T4, 4 T5, 5 T6, 6 T7, 7 T8, 8 T9, 9 T10, 10 T11, 11 T12, 12 T13, 13 T14, 14 T15, 15 T16, 16 T17, 17 T18, 18 T19, 19 T20, 20 T21, 21 T22, 22 T23, 23 T24, 24 T25, 25 T26, 26 T27);
 
 // TODO uncomment once the nightly stability of overriding specialization is pushed into stable Rust
 //impl ByteCon for Vec<usize> {
