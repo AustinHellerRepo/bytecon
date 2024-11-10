@@ -29,11 +29,11 @@ pub trait ByteStreamReaderAsync {
 }
 
 pub trait ByteStreamWriter {
-    fn write_from_byte_converter(&mut self, byte_converter: impl ByteConverter) -> Result<(), Box<dyn Error>>;
+    fn write_from_byte_converter(&mut self, byte_converter: &impl ByteConverter) -> Result<(), Box<dyn Error>>;
 }
 
 pub trait ByteStreamWriterAsync {
-    fn write_from_byte_converter(&mut self, byte_converter: impl ByteConverter) -> impl Future<Output = Result<(), Box<dyn Error>>>;
+    fn write_from_byte_converter(&mut self, byte_converter: &impl ByteConverter) -> impl Future<Output = Result<(), Box<dyn Error>>>;
 }
 
 #[derive(thiserror::Error, Debug)]
@@ -573,7 +573,7 @@ impl<TRead: std::io::Read> ByteStreamReader for TRead {
 }
 
 impl<TWrite: std::io::Write> ByteStreamWriter for TWrite {
-    fn write_from_byte_converter(&mut self, byte_converter: impl ByteConverter) -> Result<(), Box<dyn Error>> {
+    fn write_from_byte_converter(&mut self, byte_converter: &impl ByteConverter) -> Result<(), Box<dyn Error>> {
         let mut stream_bytes = Vec::new();
         byte_converter.append_to_bytes(&mut stream_bytes)?;
         self.write(&stream_bytes)?;

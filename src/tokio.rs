@@ -38,7 +38,7 @@ impl<TStream: AsyncWrite + AsyncRead + Unpin> ByteStreamReaderAsync for TlsStrea
 }
 
 impl<TStream: AsyncWrite + AsyncRead + Unpin> ByteStreamWriterAsync for TlsStream<TStream> {
-    async fn write_from_byte_converter(&mut self, byte_converter: impl crate::ByteConverter) -> Result<(), Box<dyn Error>> {
+    async fn write_from_byte_converter(&mut self, byte_converter: &impl crate::ByteConverter) -> Result<(), Box<dyn Error>> {
         let mut stream_bytes = Vec::new();
         byte_converter.append_to_bytes(&mut stream_bytes)?;
         self.write(&stream_bytes)
@@ -58,7 +58,7 @@ impl ByteStreamReaderAsync for tokio::sync::mpsc::Receiver<Vec<u8>> {
 }
 
 impl ByteStreamWriterAsync for tokio::sync::mpsc::Sender<Vec<u8>> {
-    async fn write_from_byte_converter(&mut self, byte_converter: impl ByteConverter) -> Result<(), Box<dyn Error>> {
+    async fn write_from_byte_converter(&mut self, byte_converter: &impl ByteConverter) -> Result<(), Box<dyn Error>> {
         let mut bytes = Vec::new();
         byte_converter.append_to_bytes(&mut bytes)?;
         self.send(bytes)
