@@ -61,7 +61,7 @@ impl<TStream: AsyncWrite + AsyncRead + Unpin> ByteStreamReaderAsync for TlsStrea
         };
 
         let mut bytes = Vec::new();
-        let mut chunk = [0u8; 64];
+        let mut chunk = [0u8; 4096];
         while bytes.len() < expected_bytes_length {
             let read_bytes_length_result = self.read(&mut chunk)
                 .await;
@@ -89,7 +89,7 @@ impl<TStream: AsyncWrite + AsyncRead + Unpin> ByteStreamWriterAsync for TlsStrea
         let byte_converter_bytes_length = byte_converter_bytes.len();
         let mut bytes = Vec::new();
         byte_converter_bytes_length.append_to_bytes(&mut bytes)?;
-        byte_converter_bytes.append_to_bytes(&mut bytes)?;
+        bytes.extend_from_slice(&byte_converter_bytes);
         self.write(&bytes)
             .await?;
         Ok(())
