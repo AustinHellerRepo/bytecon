@@ -1,6 +1,6 @@
 [package]
 name = "bytecon"
-version = "0.1.7"
+version = "0.1.8"
 edition = "2021"
 authors = ["Austin Heller"]
 description = "A trait for easily converting to-and-from an array of bytes."
