@@ -23,6 +23,11 @@ pub trait ByteConverter {
         self.append_to_bytes(&mut bytes)?;
         Ok(bytes)
     }
+    fn clone_via_bytes(&self) -> Result<Self, Box<dyn Error>> where Self: Sized {
+        let bytes = self.to_vec_bytes()?;
+        let mut index = 0;
+        Self::extract_from_bytes(&bytes, &mut index)
+    }
 }
 
 pub trait ByteStreamReader {
