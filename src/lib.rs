@@ -267,7 +267,7 @@ impl ByteConverter for String {
         let string_bytes_length = string_bytes.len();
 
         // usize
-        bytes.extend(&string_bytes_length.to_le_bytes());
+        string_bytes_length.append_to_bytes(bytes)?;
 
         // slice
         bytes.extend_from_slice(string_bytes);
