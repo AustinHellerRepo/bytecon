@@ -18,6 +18,8 @@ Allows for the convenient conversion of types from and to arrays of bytes.
 * `"bincode"`
   * Contains implementations for the `bincode` crate.
   * This feature conflicts with the `"burn_dtype"` feature.
+* `"rand"`
+  * Contains implementations for the `rand` and `rand_chacha` crates.
  
 # Coming soon
 * Additional implementations for other common crates
