@@ -15,6 +15,9 @@ pub mod tokio;
 #[cfg(all(feature = "bincode", not(feature = "burn_dtype")))]
 pub mod bincode;
 
+#[cfg(feature = "rand")]
+pub mod rand;
+
 pub trait ByteConverter {
     fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error>>;
     fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error>> where Self: Sized;
