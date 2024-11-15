@@ -1,4 +1,4 @@
-use std::{error::Error, future::Future};
+use std::{error::Error, future::Future, path::PathBuf};
 
 // TODO add a version byte at the front of each append_to_bytes call
 //      this can be used to match on within the extract so that changes in format across versions of this crate are unaffected
@@ -588,5 +588,17 @@ impl<TWrite: std::io::Write> ByteStreamWriter for TWrite {
         byte_converter.append_to_bytes(&mut stream_bytes)?;
         self.write(&stream_bytes)?;
         Ok(())
+    }
+}
+
+// NOTE: Path is a reference type like &str while PathBuf is owned
+
+impl ByteConverter for PathBuf {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error>> {
+        String::from(self.to_string_lossy()).append_to_bytes(bytes)?;
+        Ok(())
+    }
+    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error>> where Self: Sized {
+        Ok(PathBuf::from(String::extract_from_bytes(bytes, index)?))
     }
 }
