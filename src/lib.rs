@@ -18,6 +18,9 @@ pub mod bincode;
 #[cfg(feature = "rand")]
 pub mod rand;
 
+#[cfg(feature = "rustls")]
+pub mod rustls;
+
 pub trait ByteConverter {
     fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error>>;
     fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error>> where Self: Sized;

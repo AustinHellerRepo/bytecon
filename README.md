@@ -11,7 +11,7 @@ Allows for the convenient conversion of types from and to arrays of bytes.
   * Contains the specific implementation for the `burn` crate's `DType` type since it can conflict with the `"bincode"` feature.
   * Only use this feature if you are NOT using `"bincode"`.
 * `"tokio"`
-  * Contains implementations for the `tokio` crate.
+  * Contains implementations for the `tokio` and `tokio-rustls` crate.
     * `TlsStream<T: AsyncWrite + AsyncRead + Unpin>`
     * `Sender<Vec<u8>>`
     * `Receiver<Vec<u8>>`
@@ -20,6 +20,8 @@ Allows for the convenient conversion of types from and to arrays of bytes.
   * This feature conflicts with the `"burn_dtype"` feature.
 * `"rand"`
   * Contains implementations for the `rand` and `rand_chacha` crates.
+* `"rustls"`
+  * Contains implementations for the `rustls` crate
  
 # Coming soon
 * Additional implementations for other common crates

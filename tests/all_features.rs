@@ -23,4 +23,10 @@ mod all_features_tests {
     fn test_tokio_build() {
         // ensure that feature builds
     }
+
+    #[cfg(feature = "rustls")]
+    #[test]
+    fn test_rustls_build() {
+        // ensure that feature builds
+    }
 }
