@@ -22,14 +22,14 @@ pub mod rand;
 pub mod rustls;
 
 pub trait ByteConverter {
-    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error + Send + Sync>>;
-    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync>> where Self: Sized;
-    fn to_vec_bytes(&self) -> Result<Vec<u8>, Box<dyn Error + Send + Sync>> {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error + Send + Sync + 'static>>;
+    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized;
+    fn to_vec_bytes(&self) -> Result<Vec<u8>, Box<dyn Error + Send + Sync + 'static>> {
         let mut bytes = Vec::new();
         self.append_to_bytes(&mut bytes)?;
         Ok(bytes)
     }
-    fn clone_via_bytes(&self) -> Result<Self, Box<dyn Error + Send + Sync>> where Self: Sized {
+    fn clone_via_bytes(&self) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
         let bytes = self.to_vec_bytes()?;
         let mut index = 0;
         Self::extract_from_bytes(&bytes, &mut index)
@@ -37,19 +37,19 @@ pub trait ByteConverter {
 }
 
 pub trait ByteStreamReader {
-    fn read_to_byte_converter<T: ByteConverter>(&mut self) -> Result<T, Box<dyn Error + Send + Sync>>;
+    fn read_to_byte_converter<T: ByteConverter>(&mut self) -> Result<T, Box<dyn Error + Send + Sync + 'static>>;
 }
 
 pub trait ByteStreamReaderAsync {
-    fn read_to_byte_converter<T: ByteConverter>(&mut self) -> impl Future<Output = Result<T, Box<dyn Error + Send + Sync>>>;
+    fn read_to_byte_converter<T: ByteConverter>(&mut self) -> impl Future<Output = Result<T, Box<dyn Error + Send + Sync + 'static>>>;
 }
 
 pub trait ByteStreamWriter {
-    fn write_from_byte_converter(&mut self, byte_converter: &impl ByteConverter) -> Result<(), Box<dyn Error + Send + Sync>>;
+    fn write_from_byte_converter(&mut self, byte_converter: &impl ByteConverter) -> Result<(), Box<dyn Error + Send + Sync + 'static>>;
 }
 
 pub trait ByteStreamWriterAsync {
-    fn write_from_byte_converter(&mut self, byte_converter: &impl ByteConverter) -> impl Future<Output = Result<(), Box<dyn Error + Send + Sync>>>;
+    fn write_from_byte_converter(&mut self, byte_converter: &impl ByteConverter) -> impl Future<Output = Result<(), Box<dyn Error + Send + Sync + 'static>>>;
 }
 
 #[derive(thiserror::Error, Debug)]
@@ -76,7 +76,7 @@ enum ByteConverterError {
     },
 }
 
-fn get_single_byte(bytes: &Vec<u8>, index: &mut usize) -> Result<u8, Box<dyn Error + Send + Sync>> {
+fn get_single_byte(bytes: &Vec<u8>, index: &mut usize) -> Result<u8, Box<dyn Error + Send + Sync + 'static>> {
     let bytes_length = bytes.len();
     let index_deref = *index;
     let next_index = index_deref + 1;
@@ -91,7 +91,7 @@ fn get_single_byte(bytes: &Vec<u8>, index: &mut usize) -> Result<u8, Box<dyn Err
     Ok(byte)
 }
 
-fn get_multiple_bytes<'a>(bytes: &'a Vec<u8>, index: &mut usize, size: usize) -> Result<&'a [u8], Box<dyn Error + Send + Sync>> {
+fn get_multiple_bytes<'a>(bytes: &'a Vec<u8>, index: &mut usize, size: usize) -> Result<&'a [u8], Box<dyn Error + Send + Sync + 'static>> {
     let bytes_length = bytes.len();
     let index_deref = *index;
     let next_index = index_deref + size;
@@ -107,13 +107,13 @@ fn get_multiple_bytes<'a>(bytes: &'a Vec<u8>, index: &mut usize, size: usize) ->
 }
 
 impl ByteConverter for bool {
-    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error + Send + Sync>> {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
 
         // byte
         bytes.push(if *self { 1 } else { 0 });
         Ok(())
     }
-    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync>> where Self: Sized {
+    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
 
         // byte
         let byte = get_single_byte(bytes, index)?;
@@ -133,13 +133,13 @@ impl ByteConverter for bool {
 }
 
 impl ByteConverter for char {
-    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error + Send + Sync>> {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
         
         // char as u32
         ((*self) as u32).append_to_bytes(bytes)?;
         Ok(())
     }
-    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync>> where Self: Sized {
+    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
         
         // char as u32
         let char_value = char::from_u32(u32::extract_from_bytes(bytes, index)?)
@@ -152,13 +152,13 @@ impl ByteConverter for char {
 }
 
 impl ByteConverter for f32 {
-    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error + Send + Sync>> {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
         
         // f32
         bytes.extend_from_slice(&self.to_le_bytes());
         Ok(())
     }
-    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync>> where Self: Sized {
+    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
         
         // f32
         let float_bytes = get_multiple_bytes(bytes, index, 4)?;
@@ -168,13 +168,13 @@ impl ByteConverter for f32 {
 }
 
 impl ByteConverter for f64 {
-    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error + Send + Sync>> {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
         
         // f64
         bytes.extend_from_slice(&self.to_le_bytes());
         Ok(())
     }
-    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync>> where Self: Sized {
+    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
         
         // f64
         let float_bytes = get_multiple_bytes(bytes, index, 8)?;
@@ -184,13 +184,13 @@ impl ByteConverter for f64 {
 }
 
 impl ByteConverter for i8 {
-    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error + Send + Sync>> {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
         
         // i8 as u8
         ((*self) as u8).append_to_bytes(bytes)?;
         Ok(())
     }
-    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync>> where Self: Sized {
+    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
         
         // i8 as u8
         Ok(u8::extract_from_bytes(bytes, index)? as i8)
@@ -198,13 +198,13 @@ impl ByteConverter for i8 {
 }
 
 impl ByteConverter for i16 {
-    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error + Send + Sync>> {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
         
         // i16 as u16
         ((*self) as u16).append_to_bytes(bytes)?;
         Ok(())
     }
-    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync>> where Self: Sized {
+    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
         
         // i16 as u16
         Ok(u16::extract_from_bytes(bytes, index)? as i16)
@@ -212,13 +212,13 @@ impl ByteConverter for i16 {
 }
 
 impl ByteConverter for i32 {
-    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error + Send + Sync>> {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
         
         // i32 as u32
         ((*self) as u32).append_to_bytes(bytes)?;
         Ok(())
     }
-    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync>> where Self: Sized {
+    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
         
         // i32 as u32
         Ok(u32::extract_from_bytes(bytes, index)? as i32)
@@ -226,13 +226,13 @@ impl ByteConverter for i32 {
 }
 
 impl ByteConverter for i64 {
-    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error + Send + Sync>> {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
         
         // i64 as u64
         ((*self) as u64).append_to_bytes(bytes)?;
         Ok(())
     }
-    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync>> where Self: Sized {
+    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
         
         // i64 as u64
         Ok(u64::extract_from_bytes(bytes, index)? as i64)
@@ -240,13 +240,13 @@ impl ByteConverter for i64 {
 }
 
 impl ByteConverter for i128 {
-    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error + Send + Sync>> {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
         
         // i128 as u128
         ((*self) as u128).append_to_bytes(bytes)?;
         Ok(())
     }
-    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync>> where Self: Sized {
+    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
         
         // i128 as u128
         Ok(u128::extract_from_bytes(bytes, index)? as i128)
@@ -254,13 +254,13 @@ impl ByteConverter for i128 {
 }
 
 impl ByteConverter for isize {
-    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error + Send + Sync>> {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
         
         // isize as usize
         ((*self) as usize).append_to_bytes(bytes)?;
         Ok(())
     }
-    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync>> where Self: Sized {
+    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
         
         // isize as usize
         Ok(usize::extract_from_bytes(bytes, index)? as isize)
@@ -268,7 +268,7 @@ impl ByteConverter for isize {
 }
 
 impl ByteConverter for String {
-    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error + Send + Sync>> {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
         let string_bytes = self.as_bytes();
         let string_bytes_length = string_bytes.len();
 
@@ -279,7 +279,7 @@ impl ByteConverter for String {
         bytes.extend_from_slice(string_bytes);
         Ok(())
     }
-    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync>> where Self: Sized {
+    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
         
         // usize
         let string_bytes_length = usize::extract_from_bytes(bytes, index)?;
@@ -292,62 +292,62 @@ impl ByteConverter for String {
 }
 
 impl ByteConverter for u8 {
-    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error + Send + Sync>> {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
         bytes.push(*self);
         Ok(())
     }
-    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync>> where Self: Sized {
+    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
         let byte = get_single_byte(bytes, index)?;
         Ok(byte)
     }
 }
 
 impl ByteConverter for u16 {
-    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error + Send + Sync>> {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
         bytes.extend_from_slice(&self.to_le_bytes());
         Ok(())
     }
-    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync>> where Self: Sized {
+    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
         let u16_bytes = get_multiple_bytes(bytes, index, 2)?;
         Ok(u16::from_le_bytes(u16_bytes.try_into()?))
     }
 }
 
 impl ByteConverter for u32 {
-    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error + Send + Sync>> {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
         bytes.extend_from_slice(&self.to_le_bytes());
         Ok(())
     }
-    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync>> where Self: Sized {
+    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
         let u32_bytes = get_multiple_bytes(bytes, index, 4)?;
         Ok(u32::from_le_bytes(u32_bytes.try_into()?))
     }
 }
 
 impl ByteConverter for u64 {
-    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error + Send + Sync>> {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
         bytes.extend_from_slice(&self.to_le_bytes());
         Ok(())
     }
-    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync>> where Self: Sized {
+    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
         let u64_bytes = get_multiple_bytes(bytes, index, 8)?;
         Ok(u64::from_le_bytes(u64_bytes.try_into()?))
     }
 }
 
 impl ByteConverter for u128 {
-    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error + Send + Sync>> {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
         bytes.extend_from_slice(&self.to_le_bytes());
         Ok(())
     }
-    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync>> where Self: Sized {
+    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
         let u128_bytes = get_multiple_bytes(bytes, index, 16)?;
         Ok(u128::from_le_bytes(u128_bytes.try_into()?))
     }
 }
 
 impl ByteConverter for usize {
-    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error + Send + Sync>> {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
 
         if cfg!(target_pointer_width = "64") {
             // byte
@@ -365,7 +365,7 @@ impl ByteConverter for usize {
         }
         Ok(())
     }
-    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync>> where Self: Sized {
+    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
         
         // byte
         let usize_length = get_single_byte(bytes, index)? as usize;
@@ -397,7 +397,7 @@ impl ByteConverter for usize {
 }
 
 impl<T: ByteConverter> ByteConverter for Vec<T> {
-    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error + Send + Sync>> {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
 
         // usize
         self.len().append_to_bytes(bytes)?;
@@ -409,7 +409,7 @@ impl<T: ByteConverter> ByteConverter for Vec<T> {
 
         Ok(())
     }
-    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync>> where Self: Sized {
+    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
         
         // usize
         let list_length = usize::extract_from_bytes(bytes, index)?;
@@ -433,13 +433,13 @@ macro_rules! tuple_byte_converter {
             > ByteConverter for ($(
                 $t,
             )+) {
-                fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error + Send + Sync>> {
+                fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
                     $(
                         self.$index.append_to_bytes(bytes)?;
                     )*
                     Ok(())
                 }
-                fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync>> where Self: Sized {
+                fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
                     $(
                         let [<$t:lower>] = $t::extract_from_bytes(bytes, index)?;
                     )*
@@ -484,7 +484,7 @@ tuple_byte_converter!(0 T1, 1 T2, 2 T3, 3 T4, 4 T5, 5 T6, 6 T7, 7 T8, 8 T9, 9 T1
 
 // TODO uncomment once the nightly stability of overriding specialization is pushed into stable Rust
 //impl ByteCon for Vec<usize> {
-//    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error + Send + Sync>> {
+//    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
 //
 //        let self_length = self.len();
 //        
@@ -518,7 +518,7 @@ tuple_byte_converter!(0 T1, 1 T2, 2 T3, 3 T4, 4 T5, 5 T6, 6 T7, 7 T8, 8 T9, 9 T1
 //        
 //        Ok(())
 //    }
-//    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync>> where Self: Sized {
+//    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
 //        
 //        // usize of list
 //        let self_length = usize::extract_from_bytes(bytes, index)?;
@@ -557,14 +557,14 @@ tuple_byte_converter!(0 T1, 1 T2, 2 T3, 3 T4, 4 T5, 5 T6, 6 T7, 7 T8, 8 T9, 9 T1
 //}
 
 impl<TRead: std::io::Read> ByteStreamReader for TRead {
-    fn read_to_byte_converter<T: ByteConverter>(&mut self) -> Result<T, Box<dyn Error + Send + Sync>> {
+    fn read_to_byte_converter<T: ByteConverter>(&mut self) -> Result<T, Box<dyn Error + Send + Sync + 'static>> {
         let mut bytes = Vec::new();
         let mut chunk = [0u8; 64];
 
         let mut initial_packet = [0u8; 8];
         let read_result = self.read_exact(&mut initial_packet);
         if let Err(error) = read_result {
-            let result: Result<T, Box<dyn Error + Send + Sync>> = Err(Box::new(error));
+            let result: Result<T, Box<dyn Error + Send + Sync + 'static>> = Err(Box::new(error));
             return result;
         }
 
@@ -572,7 +572,7 @@ impl<TRead: std::io::Read> ByteStreamReader for TRead {
         while (bytes.len() as u64) < expected_bytes_length {
             let read_bytes_length_result = self.read(&mut chunk);
             if let Err(error) = read_bytes_length_result {
-                let result: Result<T, Box<dyn Error + Send + Sync>> = Err(Box::new(error));
+                let result: Result<T, Box<dyn Error + Send + Sync + 'static>> = Err(Box::new(error));
                 return result;
             }
 
@@ -589,7 +589,7 @@ impl<TRead: std::io::Read> ByteStreamReader for TRead {
 }
 
 impl<TWrite: std::io::Write> ByteStreamWriter for TWrite {
-    fn write_from_byte_converter(&mut self, byte_converter: &impl ByteConverter) -> Result<(), Box<dyn Error + Send + Sync>> {
+    fn write_from_byte_converter(&mut self, byte_converter: &impl ByteConverter) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
         let mut stream_bytes = Vec::new();
         byte_converter.append_to_bytes(&mut stream_bytes)?;
         self.write(&stream_bytes)?;
@@ -600,11 +600,11 @@ impl<TWrite: std::io::Write> ByteStreamWriter for TWrite {
 // NOTE: Path is a reference type like &str while PathBuf is owned
 
 impl ByteConverter for PathBuf {
-    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error + Send + Sync>> {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
         String::from(self.to_string_lossy()).append_to_bytes(bytes)?;
         Ok(())
     }
-    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync>> where Self: Sized {
+    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
         Ok(PathBuf::from(String::extract_from_bytes(bytes, index)?))
     }
 }

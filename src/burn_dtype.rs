@@ -3,7 +3,7 @@ use burn::tensor::{quantization::{AffineQuantization, SymmetricQuantization}, DT
 use crate::ByteConverter;
 
 impl ByteConverter for DType {
-    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error + Send + Sync>> {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
 
         // enum variant byte
         match self {
@@ -66,7 +66,7 @@ impl ByteConverter for DType {
         }
         Ok(())
     }
-    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync>> where Self: Sized {
+    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
         
         let dtype_index = u8::extract_from_bytes(bytes, index)?;
 
