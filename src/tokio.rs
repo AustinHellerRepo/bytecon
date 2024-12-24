@@ -3,14 +3,14 @@ use tokio::{io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt}, net::TcpSt
 use tokio_rustls::TlsStream;
 use crate::{ByteConverter, ByteStreamReaderAsync, ByteStreamWriterAsync};
 
-async fn read_to_byte_converter<TOutput: ByteConverter, TStream: AsyncWrite + AsyncRead + Unpin>(stream: &mut TStream) -> Result<TOutput, Box<dyn Error>> {
+async fn read_to_byte_converter<TOutput: ByteConverter, TStream: AsyncWrite + AsyncRead + Unpin>(stream: &mut TStream) -> Result<TOutput, Box<dyn Error + Send + Sync>> {
     let usize_length = {
         // byte
         let mut single_byte_chunk = [0u8; 1];
         let read_result = stream.read_exact(&mut single_byte_chunk)
             .await;
         if let Err(error) = read_result {
-            let result: Result<TOutput, Box<dyn Error>> = Err(Box::new(error));
+            let result: Result<TOutput, Box<dyn Error + Send + Sync>> = Err(Box::new(error));
             return result;
         }
 
@@ -29,7 +29,7 @@ async fn read_to_byte_converter<TOutput: ByteConverter, TStream: AsyncWrite + As
             let read_result = stream.read_exact(&mut initial_packet)
                 .await;
             if let Err(error) = read_result {
-                let result: Result<TOutput, Box<dyn Error>> = Err(Box::new(error));
+                let result: Result<TOutput, Box<dyn Error + Send + Sync>> = Err(Box::new(error));
                 return result;
             }
 
@@ -43,7 +43,7 @@ async fn read_to_byte_converter<TOutput: ByteConverter, TStream: AsyncWrite + As
             let read_result = stream.read_exact(&mut initial_packet)
                 .await;
             if let Err(error) = read_result {
-                let result: Result<TOutput, Box<dyn Error>> = Err(Box::new(error));
+                let result: Result<TOutput, Box<dyn Error + Send + Sync>> = Err(Box::new(error));
                 return result;
             }
 
@@ -64,7 +64,7 @@ async fn read_to_byte_converter<TOutput: ByteConverter, TStream: AsyncWrite + As
         let read_bytes_length_result = stream.read(&mut chunk)
             .await;
         if let Err(error) = read_bytes_length_result {
-            let result: Result<TOutput, Box<dyn Error>> = Err(Box::new(error));
+            let result: Result<TOutput, Box<dyn Error + Send + Sync>> = Err(Box::new(error));
             return result;
         }
 
@@ -79,7 +79,7 @@ async fn read_to_byte_converter<TOutput: ByteConverter, TStream: AsyncWrite + As
     TOutput::extract_from_bytes(&bytes, &mut index)
 }
 
-async fn write_from_byte_converter<TStream: AsyncWrite + AsyncRead + Unpin>(stream: &mut TStream, byte_converter: &impl crate::ByteConverter) -> Result<(), Box<dyn Error>> {
+async fn write_from_byte_converter<TStream: AsyncWrite + AsyncRead + Unpin>(stream: &mut TStream, byte_converter: &impl crate::ByteConverter) -> Result<(), Box<dyn Error + Send + Sync>> {
     let mut byte_converter_bytes = Vec::new();
     byte_converter.append_to_bytes(&mut byte_converter_bytes)?;
     let byte_converter_bytes_length = byte_converter_bytes.len();
@@ -92,31 +92,31 @@ async fn write_from_byte_converter<TStream: AsyncWrite + AsyncRead + Unpin>(stre
 }
 
 impl ByteStreamReaderAsync for TcpStream {
-    async fn read_to_byte_converter<T: ByteConverter>(&mut self) -> Result<T, Box<dyn Error>> {
+    async fn read_to_byte_converter<T: ByteConverter>(&mut self) -> Result<T, Box<dyn Error + Send + Sync>> {
         read_to_byte_converter(self).await
     }
 }
 
 impl ByteStreamWriterAsync for TcpStream {
-    async fn write_from_byte_converter(&mut self, byte_converter: &impl ByteConverter) -> Result<(), Box<dyn Error>> {
+    async fn write_from_byte_converter(&mut self, byte_converter: &impl ByteConverter) -> Result<(), Box<dyn Error + Send + Sync>> {
         write_from_byte_converter(self, byte_converter).await
     }
 }
 
 impl<TStream: AsyncWrite + AsyncRead + Unpin> ByteStreamReaderAsync for TlsStream<TStream> {
-    async fn read_to_byte_converter<T: ByteConverter>(&mut self) -> Result<T, Box<dyn std::error::Error>> {
+    async fn read_to_byte_converter<T: ByteConverter>(&mut self) -> Result<T, Box<dyn Error + Send + Sync>> {
         read_to_byte_converter(self).await
     }
 }
 
 impl<TStream: AsyncWrite + AsyncRead + Unpin> ByteStreamWriterAsync for TlsStream<TStream> {
-    async fn write_from_byte_converter(&mut self, byte_converter: &impl crate::ByteConverter) -> Result<(), Box<dyn Error>> {
+    async fn write_from_byte_converter(&mut self, byte_converter: &impl crate::ByteConverter) -> Result<(), Box<dyn Error + Send + Sync>> {
         write_from_byte_converter(self, byte_converter).await
     }
 }
 
 impl ByteStreamReaderAsync for tokio::sync::mpsc::Receiver<Vec<u8>> {
-    async fn read_to_byte_converter<T: ByteConverter>(&mut self) -> Result<T, Box<dyn Error>> {
+    async fn read_to_byte_converter<T: ByteConverter>(&mut self) -> Result<T, Box<dyn Error + Send + Sync>> {
         let bytes = self.recv()
             .await
             .ok_or(TokioByteConError::OptionVariantNoneReceivedFromReceiver)?;
@@ -126,7 +126,7 @@ impl ByteStreamReaderAsync for tokio::sync::mpsc::Receiver<Vec<u8>> {
 }
 
 impl ByteStreamWriterAsync for tokio::sync::mpsc::Sender<Vec<u8>> {
-    async fn write_from_byte_converter(&mut self, byte_converter: &impl ByteConverter) -> Result<(), Box<dyn Error>> {
+    async fn write_from_byte_converter(&mut self, byte_converter: &impl ByteConverter) -> Result<(), Box<dyn Error + Send + Sync>> {
         let mut bytes = Vec::new();
         byte_converter.append_to_bytes(&mut bytes)?;
         self.send(bytes)
