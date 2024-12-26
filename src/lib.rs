@@ -1,4 +1,4 @@
-use std::{error::Error, future::Future, path::PathBuf};
+use std::{error::Error, future::Future, mem::MaybeUninit, path::PathBuf};
 
 // TODO add a version byte at the front of each append_to_bytes call
 //      this can be used to match on within the extract so that changes in format across versions of this crate are unaffected
@@ -74,6 +74,8 @@ enum ByteConverterError {
         from_type: String,
         to_type: String,
     },
+    #[error("Impossible to extract bytes for this type.")]
+    ImpossibleToExtractBytes,
 }
 
 fn get_single_byte(bytes: &Vec<u8>, index: &mut usize) -> Result<u8, Box<dyn Error + Send + Sync + 'static>> {
@@ -422,6 +424,26 @@ impl<T: ByteConverter> ByteConverter for Vec<T> {
         }
 
         Ok(list)
+    }
+}
+
+impl<T: ByteConverter, const C: usize> ByteConverter for [T; C] {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        for byte_converter in self.iter() {
+            byte_converter.append_to_bytes(bytes)?;
+        }
+        Ok(())
+    }
+    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+
+        let mut vec = Vec::with_capacity(C);
+
+        for _ in 0..C {
+            vec.push(T::extract_from_bytes(bytes, index)?);
+        }
+
+        let array: [T; C] = vec.try_into().map_err(|_| "Incorrect array length")?;
+        Ok(array)
     }
 }
 

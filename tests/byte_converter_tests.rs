@@ -20,6 +20,13 @@ mod byte_converter_tests {
         let cloned_obj = obj.clone_via_bytes().unwrap();
         assert_eq!(obj, cloned_obj);
     }
+    
+    #[test]
+    fn test_p2b7_array() {
+        let obj = [1, 2, 3];
+        let cloned_obj = obj.clone_via_bytes().unwrap();
+        assert_eq!(obj, cloned_obj);
+    }
 
     #[test]
     fn test_t4l8_rand_chacha_8_entropy() {
