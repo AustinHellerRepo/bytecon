@@ -29,4 +29,10 @@ mod all_features_tests {
     fn test_rustls_build() {
         // ensure that feature builds
     }
+
+    #[cfg(feature = "bevy")]
+    #[test]
+    fn test_bevy_build() {
+        // ensure that feature builds
+    }
 }

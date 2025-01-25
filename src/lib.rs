@@ -21,6 +21,9 @@ pub mod rand;
 #[cfg(feature = "rustls")]
 pub mod rustls;
 
+#[cfg(feature = "bevy")]
+pub mod bevy;
+
 pub trait ByteConverter {
     fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error + Send + Sync + 'static>>;
     fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized;

@@ -67,47 +67,45 @@ impl ByteConverter for DType {
         Ok(())
     }
     fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
-        
-        let dtype_index = u8::extract_from_bytes(bytes, index)?;
-
-        let dtype = match dtype_index {
-            0 => {
-                burn::tensor::DType::F64
+        let enum_variant_byte = u8::extract_from_bytes(bytes, index)?;
+        match enum_variant_byte {
+            0u8 => {
+                Ok(burn::tensor::DType::F64)
             },
-            1 => {
-                burn::tensor::DType::F32
+            1u8 => {
+                Ok(burn::tensor::DType::F32)
             },
-            2 => {
-                burn::tensor::DType::F16
+            2u8 => {
+                Ok(burn::tensor::DType::F16)
             },
-            3 => {
-                burn::tensor::DType::BF16
+            3u8 => {
+                Ok(burn::tensor::DType::BF16)
             },
-            4 => {
-                burn::tensor::DType::I64
+            4u8 => {
+                Ok(burn::tensor::DType::I64)
             },
-            5 => {
-                burn::tensor::DType::I32
+            5u8 => {
+                Ok(burn::tensor::DType::I32)
             },
-            6 => {
-                burn::tensor::DType::I16
+            6u8 => {
+                Ok(burn::tensor::DType::I16)
             },
-            7 => {
-                burn::tensor::DType::I8
+            7u8 => {
+                Ok(burn::tensor::DType::I8)
             },
-            8 => {
-                burn::tensor::DType::U64
+            8u8 => {
+                Ok(burn::tensor::DType::U64)
             },
-            9 => {
-                burn::tensor::DType::U32
+            9u8 => {
+                Ok(burn::tensor::DType::U32)
             },
-            10 => {
-                burn::tensor::DType::U8
+            10u8 => {
+                Ok(burn::tensor::DType::U8)
             },
-            11 => {
-                burn::tensor::DType::Bool
+            11u8 => {
+                Ok(burn::tensor::DType::Bool)
             },
-            12 => {
+            12u8 => {
 
                 let strategy_index = u8::extract_from_bytes(bytes, index)?;
 
@@ -118,23 +116,21 @@ impl ByteConverter for DType {
 
                         let offset = i8::extract_from_bytes(bytes, index)?;
 
-                        burn::tensor::DType::QFloat(burn::tensor::quantization::QuantizationStrategy::PerTensorAffineInt8(AffineQuantization::init(scale, offset)))
+                        Ok(burn::tensor::DType::QFloat(burn::tensor::quantization::QuantizationStrategy::PerTensorAffineInt8(AffineQuantization::init(scale, offset))))
                     },
                     1 => {
                         let scale = f32::extract_from_bytes(bytes, index)?;
 
-                        burn::tensor::DType::QFloat(burn::tensor::quantization::QuantizationStrategy::PerTensorSymmetricInt8(SymmetricQuantization::init(scale)))
+                        Ok(burn::tensor::DType::QFloat(burn::tensor::quantization::QuantizationStrategy::PerTensorSymmetricInt8(SymmetricQuantization::init(scale))))
                     },
                     _ => {
-                        panic!("Unexpected byte representing strategy.");
+                        Err("Unexpected byte representing strategy".into())
                     },
                 }
             },
             _ => {
-                panic!("Unexpected byte representing tensor DType");
+                Err("Unexpected byte representing tensor DType".into())
             },
-        };
-        
-        Ok(dtype)
+        }
     }
 }
