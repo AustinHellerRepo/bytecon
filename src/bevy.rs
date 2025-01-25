@@ -455,3 +455,32 @@ impl ByteConverter for NativeKeyCode {
         }
     }
 }
+
+impl ByteConverter for MouseButton {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
+        match self {
+            Self::Back => 0u8.append_to_bytes(bytes)?,
+            Self::Forward => 1u8.append_to_bytes(bytes)?,
+            Self::Left => 2u8.append_to_bytes(bytes)?,
+            Self::Middle => 3u8.append_to_bytes(bytes)?,
+            Self::Other(mouse_button_id) => {
+                4u8.append_to_bytes(bytes)?;
+                mouse_button_id.append_to_bytes(bytes)?;
+            },
+            Self::Right => 5u8.append_to_bytes(bytes)?,
+        }
+        Ok(())
+    }
+    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
+        let enum_variant_byte = u8::extract_from_bytes(bytes, index)?;
+        match enum_variant_byte {
+            0u8 => Ok(Self::Back),
+            1u8 => Ok(Self::Forward),
+            2u8 => Ok(Self::Left),
+            3u8 => Ok(Self::Middle),
+            4u8 => Ok(Self::Other(u16::extract_from_bytes(bytes, index)?)),
+            5u8 => Ok(Self::Right),
+            _ => Err("Unexpected enum variant byte".into()),
+        }
+    }
+}

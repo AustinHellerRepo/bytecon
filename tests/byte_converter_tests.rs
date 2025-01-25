@@ -2,7 +2,7 @@
 mod byte_converter_tests {
     use std::path::PathBuf;
 
-    use bevy::{input::keyboard::NativeKeyCode, prelude::KeyCode};
+    use bevy::{input::keyboard::NativeKeyCode, prelude::{KeyCode, MouseButton}};
     use bytecon::ByteConverter;
     use rand::SeedableRng;
     use rand_chacha::{ChaCha20Rng, ChaCha8Rng};
@@ -271,6 +271,25 @@ mod byte_converter_tests {
 
         for key_code in key_codes {
             assert_eq!(key_code, key_code.clone_via_bytes().unwrap());
+        }
+    }
+
+    #[test]
+    fn test_w8n4_bevy_mouse() {
+        let mouse_buttons = vec![
+            MouseButton::Back,
+            MouseButton::Forward,
+            MouseButton::Left,
+            MouseButton::Middle,
+            MouseButton::Other(u16::MIN),
+            MouseButton::Other(123),
+            MouseButton::Other(u16::MAX),
+            MouseButton::Right,
+        ];
+
+
+        for mouse_button in mouse_buttons {
+            assert_eq!(mouse_button, mouse_button.clone_via_bytes().unwrap());
         }
     }
 }
