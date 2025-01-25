@@ -1,4 +1,4 @@
-use std::{error::Error, future::Future, mem::MaybeUninit, path::PathBuf};
+use std::{error::Error, future::Future, path::PathBuf};
 
 // TODO add a version byte at the front of each append_to_bytes call
 //      this can be used to match on within the extract so that changes in format across versions of this crate are unaffected
@@ -77,8 +77,6 @@ enum ByteConverterError {
         from_type: String,
         to_type: String,
     },
-    #[error("Impossible to extract bytes for this type.")]
-    ImpossibleToExtractBytes,
 }
 
 fn get_single_byte(bytes: &Vec<u8>, index: &mut usize) -> Result<u8, Box<dyn Error + Send + Sync + 'static>> {
