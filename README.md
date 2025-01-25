@@ -22,6 +22,8 @@ Allows for the convenient conversion of types from and to arrays of bytes.
   * Contains implementations for the `rand` and `rand_chacha` crates.
 * `"rustls"`
   * Contains implementations for the `rustls` crate
+* `"bevy"`
+  * Contains implementations for the `bevy` crate, version 0.15
  
 # Coming soon
 * Additional implementations for other common crates
