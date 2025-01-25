@@ -1,4 +1,4 @@
-use bevy::{input::keyboard::NativeKeyCode, prelude::*};
+use bevy::{input::{keyboard::NativeKeyCode, mouse::MouseScrollUnit}, prelude::*};
 use crate::ByteConverter;
 
 impl ByteConverter for KeyCode {
@@ -480,6 +480,24 @@ impl ByteConverter for MouseButton {
             3u8 => Ok(Self::Middle),
             4u8 => Ok(Self::Other(u16::extract_from_bytes(bytes, index)?)),
             5u8 => Ok(Self::Right),
+            _ => Err("Unexpected enum variant byte".into()),
+        }
+    }
+}
+
+impl ByteConverter for MouseScrollUnit {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
+        match self {
+            Self::Line => 0u8.append_to_bytes(bytes)?,
+            Self::Pixel => 1u8.append_to_bytes(bytes)?,
+        }
+        Ok(())
+    }
+    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
+        let enum_variant_byte = u8::extract_from_bytes(bytes, index)?;
+        match enum_variant_byte {
+            0u8 => Ok(Self::Line),
+            1u8 => Ok(Self::Pixel),
             _ => Err("Unexpected enum variant byte".into()),
         }
     }
