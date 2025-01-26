@@ -1,4 +1,4 @@
-use std::{error::Error, future::Future, path::PathBuf};
+use std::{collections::HashMap, error::Error, future::Future, path::PathBuf};
 
 // TODO add a version byte at the front of each append_to_bytes call
 //      this can be used to match on within the extract so that changes in format across versions of this crate are unaffected
@@ -396,6 +396,32 @@ impl ByteConverter for usize {
         };
 
         Ok(usize_value)
+    }
+}
+
+impl<TKey, TValue> ByteConverter for HashMap<TKey, TValue>
+where
+    TKey: ByteConverter + Eq + std::hash::Hash,
+    TValue: ByteConverter,
+{
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        self.len().append_to_bytes(bytes)?;
+        for (key, value) in self {
+            key.append_to_bytes(bytes)?;
+            value.append_to_bytes(bytes)?;
+        }
+        Ok(())
+    }
+    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        let length = usize::extract_from_bytes(bytes, index)?;
+        let mut output = HashMap::with_capacity(length);
+        for _ in 0..length {
+            output.insert(
+                TKey::extract_from_bytes(bytes, index)?,
+                TValue::extract_from_bytes(bytes, index)?,
+            );
+        }
+        Ok(output)
     }
 }
 

@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod byte_converter_tests {
-    use std::path::PathBuf;
+    use std::{collections::HashMap, path::PathBuf};
 
     use bevy::{input::{keyboard::NativeKeyCode, mouse::MouseScrollUnit}, prelude::{Entity, KeyCode, MouseButton}};
     use bytecon::ByteConverter;
@@ -18,6 +18,15 @@ mod byte_converter_tests {
     #[test]
     fn test_t3b1_pathbuf() {
         let obj = PathBuf::from("/home/path/here");
+        let cloned_obj = obj.clone_via_bytes().unwrap();
+        assert_eq!(obj, cloned_obj);
+    }
+    
+    #[test]
+    fn test_e1m6_hash_map() {
+        let mut obj = HashMap::new();
+        obj.insert(5u8, 123u16);
+        obj.insert(8u8, 234u16);
         let cloned_obj = obj.clone_via_bytes().unwrap();
         assert_eq!(obj, cloned_obj);
     }
