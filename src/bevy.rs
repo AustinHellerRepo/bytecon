@@ -502,3 +502,13 @@ impl ByteConverter for MouseScrollUnit {
         }
     }
 }
+
+impl ByteConverter for Entity {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
+        self.to_bits().append_to_bytes(bytes)?;
+        Ok(())
+    }
+    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
+        Ok(Self::from_bits(u64::extract_from_bytes(bytes, index)?))
+    }
+}

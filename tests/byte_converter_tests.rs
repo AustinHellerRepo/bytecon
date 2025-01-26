@@ -2,7 +2,7 @@
 mod byte_converter_tests {
     use std::path::PathBuf;
 
-    use bevy::{input::{keyboard::NativeKeyCode, mouse::MouseScrollUnit}, prelude::{KeyCode, MouseButton}};
+    use bevy::{input::{keyboard::NativeKeyCode, mouse::MouseScrollUnit}, prelude::{Entity, KeyCode, MouseButton}};
     use bytecon::ByteConverter;
     use rand::SeedableRng;
     use rand_chacha::{ChaCha20Rng, ChaCha8Rng};
@@ -301,6 +301,18 @@ mod byte_converter_tests {
 
         for mouse_scroll_unit in mouse_scroll_units {
             assert_eq!(mouse_scroll_unit, mouse_scroll_unit.clone_via_bytes().unwrap());
+        }
+    }
+
+    #[test]
+    fn test_j2s9_bevy_entity_byte_converter() {
+        let entities = vec![
+            Entity::from_raw(u32::MIN),
+            Entity::from_raw(123),
+            Entity::from_raw(u32::MAX),
+        ];
+        for entity in entities {
+            assert_eq!(entity, entity.clone_via_bytes().unwrap());
         }
     }
 }
