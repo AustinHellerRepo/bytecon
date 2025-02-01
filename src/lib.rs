@@ -3,17 +3,20 @@ use std::{any::{Any, TypeId}, cell::{Cell, RefCell}, collections::{HashMap, VecD
 // TODO add a version byte at the front of each append_to_bytes call
 //      this can be used to match on within the extract so that changes in format across versions of this crate are unaffected
 
+#[cfg(feature = "bevy")]
+pub mod bevy;
+
+#[cfg(all(feature = "bincode", not(feature = "burn_dtype")))]
+pub mod bincode;
+
 #[cfg(feature = "burn")]
 pub mod burn;
 
 #[cfg(feature = "burn_dtype")]
 pub mod burn_dtype;
 
-#[cfg(feature = "tokio")]
-pub mod tokio;
-
-#[cfg(all(feature = "bincode", not(feature = "burn_dtype")))]
-pub mod bincode;
+#[cfg(feature = "glam")]
+pub mod glam;
 
 #[cfg(feature = "rand")]
 pub mod rand;
@@ -21,8 +24,8 @@ pub mod rand;
 #[cfg(feature = "rustls")]
 pub mod rustls;
 
-#[cfg(feature = "bevy")]
-pub mod bevy;
+#[cfg(feature = "tokio")]
+pub mod tokio;
 
 pub trait ByteConverter: Any {
     fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error + Send + Sync + 'static>>;
@@ -836,22 +839,10 @@ impl ByteConverter for PathBuf {
     }
 }
 
+#[derive(Default)]
 pub struct ByteConverterFactory {
     append_to_bytes_per_type_id: HashMap<TypeId, Box<dyn Fn(&dyn ByteConverter, &mut Vec<u8>) -> Result<(), Box<dyn Error + Send + Sync + 'static>>>>,
     extract_from_bytes_per_type_id: HashMap<TypeId, Box<dyn Fn(&Vec<u8>, &mut usize) -> Result<Box<dyn Any>, Box<dyn Error + Send + Sync + 'static>>>>,
-}
-
-impl Default for ByteConverterFactory {
-    fn default() -> Self {
-        let mut instance = Self {
-            append_to_bytes_per_type_id: HashMap::default(),
-            extract_from_bytes_per_type_id: HashMap::default(),
-        };
-        instance
-            .register::<u8>();
-        // TODO expand this to include many more pre-registered types
-        instance
-    }
 }
 
 impl ByteConverterFactory {
@@ -882,6 +873,18 @@ impl ByteConverterFactory {
         }
         else {
             Err("Type not supported for generation. Remember to register the type with the factory.".into())
+        }
+    }
+    pub fn generate_type<T: 'static>(&self, type_id: TypeId, bytes: &Vec<u8>) -> Result<T, Box<dyn Error>> {
+        match self.generate(type_id, bytes)?
+            .downcast::<T>() {
+
+            Ok(instance) => {
+                Ok(*instance)
+            },
+            Err(_) => {
+                Err("Failed to downcast type. This indicates that the provided type_id does not match the generic T type.".into())
+            }
         }
     }
 }

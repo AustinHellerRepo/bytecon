@@ -512,3 +512,19 @@ impl ByteConverter for Entity {
         Ok(Self::from_bits(u64::extract_from_bytes(bytes, index)?))
     }
 }
+
+impl ByteConverter for Transform {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
+        self.rotation.append_to_bytes(bytes)?;
+        self.scale.append_to_bytes(bytes)?;
+        self.translation.append_to_bytes(bytes)?;
+        Ok(())
+    }
+    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
+        let mut instance = Self::default();
+        instance.rotation = Quat::extract_from_bytes(bytes, index)?;
+        instance.scale = Vec3::extract_from_bytes(bytes, index)?;
+        instance.translation = Vec3::extract_from_bytes(bytes, index)?;
+        Ok(instance)
+    }
+}

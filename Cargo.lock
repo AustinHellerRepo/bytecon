@@ -1762,6 +1762,7 @@ dependencies = [
  "bevy",
  "bincode 1.3.3",
  "burn",
+ "glam",
  "paste",
  "rand",
  "rand_chacha",
