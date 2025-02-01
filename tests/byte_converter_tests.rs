@@ -1,9 +1,8 @@
 #[cfg(test)]
 mod byte_converter_tests {
-    use std::{collections::HashMap, ffi::CString, path::PathBuf};
-
+    use std::{any::Any, collections::HashMap, ffi::CString, path::PathBuf};
     use bevy::{input::{keyboard::NativeKeyCode, mouse::MouseScrollUnit}, prelude::{Entity, KeyCode, MouseButton}};
-    use bytecon::ByteConverter;
+    use bytecon::{ByteConverter, ByteConverterFactory};
     use rand::SeedableRng;
     use rand_chacha::{ChaCha20Rng, ChaCha8Rng};
 
@@ -330,5 +329,36 @@ mod byte_converter_tests {
         for entity in entities {
             assert_eq!(entity, entity.clone_via_bytes().unwrap());
         }
+    }
+
+    #[test]
+    fn test_o9w7_byte_converter_factory() {
+        let mut factory = ByteConverterFactory::default();
+        factory.register::<u8>();
+
+        let test_value = 123u8;
+        let test_value_bytes = test_value.to_vec_bytes().unwrap();
+        let type_id = std::any::TypeId::of::<u8>();
+
+        // you start with a Box<dyn Any> because we don't know the T
+        let generated_value = factory.generate(type_id, &test_value_bytes).unwrap();
+
+        // downstream we can downcast when we know what T is
+        let casted_generated_value = *Box::<dyn Any>::downcast::<u8>(generated_value).unwrap();
+        assert_eq!(test_value, casted_generated_value);
+    }
+
+    #[test]
+    fn test_o9w7_byte_converter_factory_smaller() {
+        let mut factory = ByteConverterFactory::default();
+        factory.register::<u8>();
+
+        let test_value = 123u8;
+        let test_value_bytes = test_value.to_vec_bytes().unwrap();
+        let type_id = std::any::TypeId::of::<u8>();
+        
+        // we can get the value generated at the same time, but we might as well use T::extract_from_bytes ourselves
+        let generated_value = *factory.generate(type_id, &test_value_bytes).unwrap().downcast::<u8>().unwrap();
+        assert_eq!(test_value, generated_value);
     }
 }

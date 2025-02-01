@@ -1,4 +1,4 @@
-use std::{cell::{Cell, RefCell}, collections::{HashMap, VecDeque}, error::Error, ffi::{CString, OsString}, future::Future, path::PathBuf, rc::Rc, sync::{Arc, Mutex, RwLock}};
+use std::{any::{Any, TypeId}, cell::{Cell, RefCell}, collections::{HashMap, VecDeque}, error::Error, ffi::{CString, OsString}, future::Future, path::PathBuf, rc::Rc, sync::{Arc, Mutex, RwLock}};
 
 // TODO add a version byte at the front of each append_to_bytes call
 //      this can be used to match on within the extract so that changes in format across versions of this crate are unaffected
@@ -24,7 +24,7 @@ pub mod rustls;
 #[cfg(feature = "bevy")]
 pub mod bevy;
 
-pub trait ByteConverter {
+pub trait ByteConverter: Any {
     fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error + Send + Sync + 'static>>;
     fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized;
     fn to_vec_bytes(&self) -> Result<Vec<u8>, Box<dyn Error + Send + Sync + 'static>> {
@@ -833,5 +833,55 @@ impl ByteConverter for PathBuf {
     }
     fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
         Ok(PathBuf::from(String::extract_from_bytes(bytes, index)?))
+    }
+}
+
+pub struct ByteConverterFactory {
+    append_to_bytes_per_type_id: HashMap<TypeId, Box<dyn Fn(&dyn ByteConverter, &mut Vec<u8>) -> Result<(), Box<dyn Error + Send + Sync + 'static>>>>,
+    extract_from_bytes_per_type_id: HashMap<TypeId, Box<dyn Fn(&Vec<u8>, &mut usize) -> Result<Box<dyn Any>, Box<dyn Error + Send + Sync + 'static>>>>,
+}
+
+impl Default for ByteConverterFactory {
+    fn default() -> Self {
+        let mut instance = Self {
+            append_to_bytes_per_type_id: HashMap::default(),
+            extract_from_bytes_per_type_id: HashMap::default(),
+        };
+        instance
+            .register::<u8>();
+        // TODO expand this to include many more pre-registered types
+        instance
+    }
+}
+
+impl ByteConverterFactory {
+    pub fn register<T: ByteConverter + 'static>(&mut self) -> &mut Self {
+        let type_id = std::any::TypeId::of::<T>();
+        let append_to_bytes_function: Box<dyn Fn(&dyn ByteConverter, &mut Vec<u8>) -> Result<(), Box<dyn Error + Send + Sync>>> = Box::new(|s: &dyn ByteConverter, b| {
+            s.append_to_bytes(b)
+        });
+        self.append_to_bytes_per_type_id.insert(type_id, append_to_bytes_function);
+        let extract_from_bytes_function: Box<dyn Fn(&Vec<u8>, &mut usize) -> Result<Box<dyn Any>, Box<dyn Error + Send + Sync>>> = Box::new(|b, i| {
+            T::extract_from_bytes(b, i)
+                .map(|item| Box::new(item) as Box<dyn Any>)
+        });
+        self.extract_from_bytes_per_type_id.insert(type_id, extract_from_bytes_function);
+        self
+    }
+    pub fn generate(&self, type_id: TypeId, bytes: &Vec<u8>) -> Result<Box<dyn Any>, Box<dyn Error>> {
+        if let Some(registered_type) = self.extract_from_bytes_per_type_id.get(&type_id) {
+            let mut index = 0;
+            match (registered_type)(bytes, &mut index) {
+                Ok(instance) => {
+                    Ok(instance)
+                },
+                Err(error) => {
+                    Err(error)
+                },
+            }
+        }
+        else {
+            Err("Type not supported for generation. Remember to register the type with the factory.".into())
+        }
     }
 }
