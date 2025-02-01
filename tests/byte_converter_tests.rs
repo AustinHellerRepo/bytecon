@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod byte_converter_tests {
-    use std::{collections::HashMap, path::PathBuf};
+    use std::{collections::HashMap, ffi::CString, path::PathBuf};
 
     use bevy::{input::{keyboard::NativeKeyCode, mouse::MouseScrollUnit}, prelude::{Entity, KeyCode, MouseButton}};
     use bytecon::ByteConverter;
@@ -13,6 +13,13 @@ mod byte_converter_tests {
         let string = String::from("test value");
         let cloned_string = string.clone_via_bytes().unwrap();
         assert_eq!(string, cloned_string);
+    }
+
+    #[test]
+    fn test_g5d2_cstring() {
+        let cstring = CString::new("test value").unwrap();
+        let cloned_cstring = cstring.clone_via_bytes().unwrap();
+        assert_eq!(cstring, cloned_cstring);
     }
 
     #[test]

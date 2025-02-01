@@ -1,4 +1,4 @@
-use std::{collections::HashMap, error::Error, future::Future, path::PathBuf};
+use std::{cell::{Cell, RefCell}, collections::{HashMap, VecDeque}, error::Error, ffi::{CString, OsString}, future::Future, path::PathBuf, rc::Rc, sync::{Arc, Mutex, RwLock}};
 
 // TODO add a version byte at the front of each append_to_bytes call
 //      this can be used to match on within the extract so that changes in format across versions of this crate are unaffected
@@ -77,6 +77,12 @@ enum ByteConverterError {
         from_type: String,
         to_type: String,
     },
+    #[error("Unexpected byte value {byte_value} when trying to parse to Option value of Some or None.")]
+    UnexpectedByteValueForOption {
+        byte_value: u8,
+    },
+    #[error("Failed to lock mutex.")]
+    FailedToLockMutex,
 }
 
 fn get_single_byte(bytes: &Vec<u8>, index: &mut usize) -> Result<u8, Box<dyn Error + Send + Sync + 'static>> {
@@ -107,6 +113,15 @@ fn get_multiple_bytes<'a>(bytes: &'a Vec<u8>, index: &mut usize, size: usize) ->
     let multiple_bytes = &bytes[index_deref..next_index];
     *index = next_index;
     Ok(multiple_bytes)
+}
+
+impl ByteConverter for () {
+    fn append_to_bytes(&self, _: &mut Vec<u8>) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        Ok(())
+    }
+    fn extract_from_bytes(_: &Vec<u8>, _: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        Ok(())
+    }
 }
 
 impl ByteConverter for bool {
@@ -294,6 +309,22 @@ impl ByteConverter for String {
     }
 }
 
+impl ByteConverter for CString {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        let cstring_bytes = self.as_bytes();
+        cstring_bytes.len().append_to_bytes(bytes)?;
+        bytes.extend_from_slice(cstring_bytes);
+        Ok(())
+    }
+    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        let cstring_length = usize::extract_from_bytes(bytes, index)?;
+        let cstring_bytes = get_multiple_bytes(bytes, index, cstring_length)?;
+        Ok(Self::new(&cstring_bytes[..])?)
+    }
+}
+
+// implementing for OsString may not work since we cannot guarantee the destination system is the same operating system
+
 impl ByteConverter for u8 {
     fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
         bytes.push(*self);
@@ -454,6 +485,29 @@ impl<T: ByteConverter> ByteConverter for Vec<T> {
     }
 }
 
+impl<T: ByteConverter> ByteConverter for VecDeque<T> {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        self.len().append_to_bytes(bytes)?;
+        let (front, back) = self.as_slices();
+        for element in front {
+            element.append_to_bytes(bytes)?;
+        }
+        for element in back {
+            element.append_to_bytes(bytes)?;
+        }
+        Ok(())
+    }
+    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        let vec_deque_length = usize::extract_from_bytes(bytes, index)?;
+        let mut vec_deque = VecDeque::with_capacity(vec_deque_length);
+        for _ in 0..vec_deque_length {
+            let vec_deque_element = T::extract_from_bytes(bytes, index)?;
+            vec_deque.push_back(vec_deque_element);
+        }
+        Ok(vec_deque)
+    }
+}
+
 impl<T: ByteConverter, const C: usize> ByteConverter for [T; C] {
     fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
         for byte_converter in self.iter() {
@@ -473,6 +527,130 @@ impl<T: ByteConverter, const C: usize> ByteConverter for [T; C] {
         Ok(array)
     }
 }
+
+impl<T: ByteConverter> ByteConverter for Option<T> {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        match self {
+            Some(inner) => {
+                0u8.append_to_bytes(bytes)?;
+                inner.append_to_bytes(bytes)?;
+            },
+            None => {
+                1u8.append_to_bytes(bytes)?;
+            }
+        }
+        Ok(())
+    }
+    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        let enum_variant_byte = u8::extract_from_bytes(bytes, index)?;
+        match enum_variant_byte {
+            0u8 => {
+                Ok(Self::Some(T::extract_from_bytes(bytes, index)?))
+            },
+            1u8 => {
+                Ok(Self::None)
+            },
+            _ => {
+                Err(ByteConverterError::UnexpectedByteValueForOption {
+                    byte_value: enum_variant_byte,
+                }.into())
+            }
+        }
+    }
+}
+
+impl<T: ByteConverter> ByteConverter for Box<T> {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        self.as_ref().append_to_bytes(bytes)?;
+        Ok(())
+    }
+    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        Ok(Box::new(T::extract_from_bytes(bytes, index)?))
+    }
+}
+
+impl<T: ByteConverter> ByteConverter for Rc<T> {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        self.as_ref().append_to_bytes(bytes)?;
+        Ok(())
+    }
+    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        Ok(Rc::new(T::extract_from_bytes(bytes, index)?))
+    }
+}
+
+impl<T: ByteConverter> ByteConverter for Arc<T> {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        self.as_ref().append_to_bytes(bytes)?;
+        Ok(())
+    }
+    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        Ok(Arc::new(T::extract_from_bytes(bytes, index)?))
+    }
+}
+
+impl<T: ByteConverter> ByteConverter for Mutex<T> {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        self
+            .lock()
+            .map_err(|_| {
+                Box::new(ByteConverterError::FailedToLockMutex)
+            })?
+            .append_to_bytes(bytes)?;
+        Ok(())
+    }
+    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        Ok(Mutex::new(T::extract_from_bytes(bytes, index)?))
+    }
+}
+
+impl<T: ByteConverter> ByteConverter for RwLock<T> {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        self
+            .read()
+            .map_err(|_| {
+                Box::new(ByteConverterError::FailedToLockMutex)
+            })?
+            .append_to_bytes(bytes)?;
+        Ok(())
+    }
+    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        Ok(RwLock::new(T::extract_from_bytes(bytes, index)?))
+    }
+}
+
+impl<T: ByteConverter> ByteConverter for RefCell<T> {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        self.borrow().append_to_bytes(bytes)?;
+        Ok(())
+    }
+    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        Ok(RefCell::new(T::extract_from_bytes(bytes, index)?))
+    }
+}
+
+// TODO wait for specialization to become stable
+//impl<T: ByteConverter + Copy> ByteConverter for Cell<T> {
+//    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
+//        self.get().append_to_bytes(bytes)?;
+//        Ok(())
+//    }
+//    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+//        Ok(Cell::new(T::extract_from_bytes(bytes, index)?))
+//    }
+//}
+//
+//impl<T: ByteConverter + Default> ByteConverter for Cell<T> {
+//    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
+//        let value = self.replace(T::default());
+//        value.append_to_bytes(bytes)?;
+//        self.set(value);
+//        Ok(())
+//    }
+//    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+//        Ok(Cell::new(T::extract_from_bytes(bytes, index)?))
+//    }
+//}
 
 macro_rules! tuple_byte_converter {
     ($($index:tt $t:tt),+) => {
