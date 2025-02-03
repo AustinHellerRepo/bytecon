@@ -1,4 +1,4 @@
-use std::{any::{Any, TypeId}, cell::{Cell, RefCell}, collections::{HashMap, VecDeque}, error::Error, ffi::{CString, OsString}, future::Future, path::PathBuf, rc::Rc, sync::{Arc, Mutex, RwLock}};
+use std::{any::{Any, TypeId}, cell::RefCell, collections::{HashMap, VecDeque}, error::Error, ffi::CString, future::Future, path::PathBuf, rc::Rc, sync::{Arc, Mutex, RwLock}};
 
 // TODO add a version byte at the front of each append_to_bytes call
 //      this can be used to match on within the extract so that changes in format across versions of this crate are unaffected
@@ -562,6 +562,38 @@ impl<T: ByteConverter> ByteConverter for Option<T> {
     }
 }
 
+//impl<T, E> ByteConverter for Result<T, E>
+//where
+//    T: ByteConverter,
+//    E: Error + Send + Sync + 'static,
+//{
+//    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
+//        match self {
+//            Ok(value) => {
+//                0u8.append_to_bytes(bytes)?;
+//                value.append_to_bytes(bytes)?;
+//            },
+//            Err(error) => {
+//                return Err("TODO fix error type".into());
+//            }
+//        }
+//        Ok(())
+//    }
+//    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+//        let enum_variant_byte = u8::extract_from_bytes(bytes, index)?;
+//        match enum_variant_byte {
+//            0u8 => {
+//                Ok(Self::Ok(
+//                    T::extract_from_bytes(bytes, index)?,
+//                ))
+//            },
+//            _ => {
+//                Err("Unexpected enum variant byte.".into())
+//            },
+//        }
+//    }
+//}
+
 impl<T: ByteConverter> ByteConverter for Box<T> {
     fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
         self.as_ref().append_to_bytes(bytes)?;
@@ -839,6 +871,16 @@ impl ByteConverter for PathBuf {
     }
 }
 
+// this seems to conflict with KeyCode
+//impl<TError> ByteConverter for TError
+//where
+//    TError: Error + Send + Sync + 'static,
+//{
+//    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
+//        todo!();
+//    }
+//}
+
 #[derive(Default)]
 pub struct ByteConverterFactory {
     append_to_bytes_per_type_id: HashMap<TypeId, Box<dyn Fn(&dyn ByteConverter, &mut Vec<u8>) -> Result<(), Box<dyn Error + Send + Sync + 'static>>>>,
@@ -873,18 +915,6 @@ impl ByteConverterFactory {
         }
         else {
             Err("Type not supported for generation. Remember to register the type with the factory.".into())
-        }
-    }
-    pub fn generate_type<T: 'static>(&self, type_id: TypeId, bytes: &Vec<u8>) -> Result<T, Box<dyn Error>> {
-        match self.generate(type_id, bytes)?
-            .downcast::<T>() {
-
-            Ok(instance) => {
-                Ok(*instance)
-            },
-            Err(_) => {
-                Err("Failed to downcast type. This indicates that the provided type_id does not match the generic T type.".into())
-            }
         }
     }
 }
