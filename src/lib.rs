@@ -884,40 +884,83 @@ impl ByteConverter for PathBuf {
 //    }
 //}
 
-#[derive(Default)]
-pub struct ByteConverterFactory {
-    append_to_bytes_per_type_id: HashMap<TypeId, Box<dyn Fn(&dyn ByteConverter, &mut Vec<u8>) -> Result<(), Box<dyn Error + Send + Sync + 'static>>>>,
-    extract_from_bytes_per_type_id: HashMap<TypeId, Box<dyn Fn(&Vec<u8>, &mut usize) -> Result<Box<dyn Any>, Box<dyn Error + Send + Sync + 'static>>>>,
+struct TypedByteConverterRegistration<TContext, TOutput, TByteConverter> {
+    extract_from_bytes_function: fn(&Vec<u8>, &mut usize) -> Result<TByteConverter, Box<dyn Error + Send + Sync + 'static>>,
+    apply_function: fn(&mut TContext, TByteConverter) -> Result<TOutput, Box<dyn Error + Send + Sync + 'static>>,
 }
 
-impl ByteConverterFactory {
-    pub fn register<T: ByteConverter + 'static>(&mut self) -> &mut Self {
-        let type_id = std::any::TypeId::of::<T>();
-        let append_to_bytes_function: Box<dyn Fn(&dyn ByteConverter, &mut Vec<u8>) -> Result<(), Box<dyn Error + Send + Sync>>> = Box::new(|s: &dyn ByteConverter, b| {
-            s.append_to_bytes(b)
-        });
-        self.append_to_bytes_per_type_id.insert(type_id, append_to_bytes_function);
-        let extract_from_bytes_function: Box<dyn Fn(&Vec<u8>, &mut usize) -> Result<Box<dyn Any>, Box<dyn Error + Send + Sync>>> = Box::new(|b, i| {
-            T::extract_from_bytes(b, i)
-                .map(|item| Box::new(item) as Box<dyn Any>)
-        });
-        self.extract_from_bytes_per_type_id.insert(type_id, extract_from_bytes_function);
+impl<TContext, TOutput, TByteConverter> TypedByteConverterRegistration<TContext, TOutput, TByteConverter> {
+    fn new(
+        extract_from_bytes_function: fn(&Vec<u8>, &mut usize) -> Result<TByteConverter, Box<dyn Error + Send + Sync + 'static>>,
+        apply_function: fn(&mut TContext, TByteConverter) -> Result<TOutput, Box<dyn Error + Send + Sync + 'static>>,
+    ) -> Self {
+        Self {
+            extract_from_bytes_function,
+            apply_function,
+        }
+    }
+    fn extract_from_bytes_and_apply(&self, context: &mut TContext, bytes: &Vec<u8>, index: &mut usize) -> Result<TOutput, Box<dyn Error + Send + Sync + 'static>> {
+        let byte_converter = (self.extract_from_bytes_function)(bytes, index)?;
+        (self.apply_function)(context, byte_converter)
+    }
+}
+
+struct UntypedByteConverterRegistration<TContext, TOutput> {
+    type_id: TypeId,
+    extract_from_bytes_function: unsafe fn(),
+    apply_function: unsafe fn(),
+    phantom_context: std::marker::PhantomData<TContext>,
+    phantom_output: std::marker::PhantomData<TOutput>,
+}
+
+impl<TContext, TOutput> UntypedByteConverterRegistration<TContext, TOutput> {
+    pub fn new<TByteConverter>(apply_function: fn(&mut TContext, TByteConverter) -> Result<TOutput, Box<dyn Error + Send + Sync + 'static>>) -> Self
+    where
+        TByteConverter: ByteConverter,
+    {
+        Self {
+            type_id: std::any::TypeId::of::<TByteConverter>(),
+            extract_from_bytes_function: unsafe { std::mem::transmute::<fn(&Vec<u8>, &mut usize) -> Result<TByteConverter, Box<dyn Error + Sync + Send + 'static>>, unsafe fn()>(TByteConverter::extract_from_bytes) },
+            apply_function: unsafe { std::mem::transmute::<fn(&mut TContext, TByteConverter) -> Result<TOutput, Box<dyn Error + Send + Sync + 'static>>, unsafe fn()>(apply_function) },
+            phantom_context: std::marker::PhantomData::default(),
+            phantom_output: std::marker::PhantomData::default(),
+        }
+    }
+    fn cast<TByteConverter>(&self) -> TypedByteConverterRegistration<TContext, TOutput, TByteConverter> {
+        TypedByteConverterRegistration {
+            extract_from_bytes_function: unsafe { std::mem::transmute::<unsafe fn(), fn(&Vec<u8>, &mut usize) -> Result<TByteConverter, Box<dyn Error + Send + Sync + 'static>>>(self.extract_from_bytes_function) },
+            apply_function: unsafe { std::mem::transmute::<unsafe fn(), fn(&mut TContext, TByteConverter) -> Result<TOutput, Box<dyn Error + Send + Sync + 'static>>>(self.apply_function) },
+        }
+    }
+}
+
+pub struct ByteConverterFactory<TContext, TOutput> {
+    untyped_byte_converter_registration_per_type_id: HashMap<TypeId, UntypedByteConverterRegistration<TContext, TOutput>>,
+}
+
+impl<TContext, TOutput> ByteConverterFactory<TContext, TOutput> {
+    pub fn new() -> Self {
+        Self {
+            untyped_byte_converter_registration_per_type_id: HashMap::new(),
+        }
+    }
+    pub fn register<TByteConverter>(&mut self, apply_function: fn(&mut TContext, TByteConverter) -> Result<TOutput, Box<dyn Error + Send + Sync + 'static>>) -> &mut Self
+    where
+        TByteConverter: ByteConverter,
+    {
+        let untyped_byte_converter_registration = UntypedByteConverterRegistration::new::<TByteConverter>(apply_function);
+        self.untyped_byte_converter_registration_per_type_id.insert(untyped_byte_converter_registration.type_id, untyped_byte_converter_registration);
         self
     }
-    pub fn generate(&self, type_id: TypeId, bytes: &Vec<u8>) -> Result<Box<dyn Any>, Box<dyn Error>> {
-        if let Some(registered_type) = self.extract_from_bytes_per_type_id.get(&type_id) {
-            let mut index = 0;
-            match (registered_type)(bytes, &mut index) {
-                Ok(instance) => {
-                    Ok(instance)
-                },
-                Err(error) => {
-                    Err(error)
-                },
-            }
-        }
-        else {
-            Err("Type not supported for generation. Remember to register the type with the factory.".into())
-        }
+    pub fn extract_from_bytes_and_apply<TByteConverter>(&self, context: &mut TContext, type_id: TypeId, bytes: &Vec<u8>, index: &mut usize) -> Result<TOutput, Box<dyn Error + Sync + Send + 'static>>
+    where
+        TByteConverter: ByteConverter,
+    {
+        let Some(untyped_byte_converter_registration) = self.untyped_byte_converter_registration_per_type_id.get(&type_id) else {
+            return Err("TypeId not registered to any ByteConverter.".into());
+        };
+        let typed_byte_converter_registration = untyped_byte_converter_registration.cast::<TByteConverter>();
+        let output = typed_byte_converter_registration.extract_from_bytes_and_apply(context, bytes, index)?;
+        Ok(output)
     }
 }
