@@ -1,6 +1,6 @@
 use bevy::{input::{keyboard::NativeKeyCode, mouse::MouseScrollUnit}, prelude::*};
 use crate::ByteConverter;
-use std::{any::TypeId, error::Error};
+use std::{any::TypeId, collections::HashMap, error::Error, mem};
 
 impl ByteConverter for KeyCode {
     fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
@@ -679,6 +679,21 @@ where
     }
 }
 
+pub struct UntypedReplicationRegistration {
+    type_id: TypeId,
+    append_to_bytes_function: unsafe fn(),
+    extract_from_bytes_function: unsafe fn(),
+}
+
+impl UntypedReplicationRegistration {
+    pub unsafe fn cast<C: Component + ByteConverter>(&self) -> ReplicationRegistration<C> {
+        ReplicationRegistration {
+            append_to_bytes_function: unsafe { std::mem::transmute::<unsafe fn(), fn(&C, &mut Vec<u8>) -> Result<(), Box<dyn Error>>>(self.append_to_bytes_function) },
+            extract_from_bytes_function: unsafe { std::mem::transmute::<unsafe fn(), fn(&Vec<u8>, &mut usize) -> Result<C, Box<dyn Error>>>(self.extract_from_bytes_function) },
+        }
+    }
+}
+
 pub struct ReplicationFactory {
-    untyped_replication_registrations: !,
+    untyped_replication_registrations_per_type_id: HashMap<TypeId, UntypedReplicationRegistration>,
 }

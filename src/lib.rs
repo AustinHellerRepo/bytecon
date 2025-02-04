@@ -40,8 +40,11 @@ pub trait ByteConverter: Any {
         let mut index = 0;
         Self::extract_from_bytes(&bytes, &mut index)
     }
+    fn deserialize_from_bytes(bytes: &Vec<u8>) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        let mut index = 0;
+        Self::extract_from_bytes(bytes, &mut index)
+    }
 }
-
 pub trait ByteStreamReader {
     fn read_to_byte_converter<T: ByteConverter>(&mut self) -> Result<T, Box<dyn Error + Send + Sync + 'static>>;
 }
