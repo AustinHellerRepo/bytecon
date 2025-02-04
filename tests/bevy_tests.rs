@@ -25,19 +25,19 @@ mod bevy_tests {
             Ok(())
         }
 
-        let byte_converter_factory = ByteConverterFactory::<ByteConverterFactoryContext, ()>::new();
+        let mut byte_converter_factory = ByteConverterFactory::<ByteConverterFactoryContext, ()>::new();
         byte_converter_factory
             .register::<Transform>(apply_component);
 
         let transform = Transform::from_xyz(1.0, 2.0, 3.0);
         let transform_bytes = transform.to_vec_bytes().unwrap();
 
-        let context = ByteConverterFactoryContext {
+        let mut context = ByteConverterFactoryContext {
             commands: &mut commands,
         };
         let type_id = std::any::TypeId::of::<Transform>();
         let mut index = 0;
-        byte_converter_factory.extract_from_bytes_and_apply(&mut context, type_id, &transform_bytes, &mut index).unwrap();
+        let output = byte_converter_factory.extract_from_bytes_and_apply(&mut context, type_id, &transform_bytes, &mut index).unwrap();
 
     }
 }

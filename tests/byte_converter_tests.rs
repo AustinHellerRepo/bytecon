@@ -2,6 +2,7 @@
 mod byte_converter_tests {
     use std::{any::Any, collections::HashMap, ffi::CString, path::PathBuf};
     use bevy::{input::{keyboard::NativeKeyCode, mouse::MouseScrollUnit}, prelude::{Entity, KeyCode, MouseButton}};
+    use burn::tensor::{repr::MaskWhereOperationDescription, T};
     use bytecon::{ByteConverter, ByteConverterFactory};
     use rand::SeedableRng;
     use rand_chacha::{ChaCha20Rng, ChaCha8Rng};
@@ -333,32 +334,86 @@ mod byte_converter_tests {
 
     #[test]
     fn test_o9w7_byte_converter_factory() {
-        let mut factory = ByteConverterFactory::default();
-        factory.register::<u8>();
+
+        fn apply_u8<TByteConverter>(previous: &mut Option<u8>, byte_converter: TByteConverter) -> Result<Option<u8>, Box<dyn std::error::Error + Send + Sync + 'static>>
+        where
+            TByteConverter: ByteConverter,
+        {
+            let output = *previous;
+            let current = byte_converter.cast_via_bytes::<u8>()?;
+            *previous = Some(current);
+            Ok(output)
+        }
+        let mut factory = ByteConverterFactory::new();
+        factory.register::<u8>(apply_u8);
 
         let test_value = 123u8;
         let test_value_bytes = test_value.to_vec_bytes().unwrap();
         let type_id = std::any::TypeId::of::<u8>();
+        let mut previous: Option<u8> = None;
 
         // you start with a Box<dyn Any> because we don't know the T
-        let generated_value = factory.generate(type_id, &test_value_bytes).unwrap();
+        let mut index = 0;
+        let output = factory.extract_from_bytes_and_apply(&mut previous, type_id, &test_value_bytes, &mut index).unwrap();
 
         // downstream we can downcast when we know what T is
-        let casted_generated_value = *Box::<dyn Any>::downcast::<u8>(generated_value).unwrap();
-        assert_eq!(test_value, casted_generated_value);
+        assert_eq!(None, output);
     }
 
     #[test]
-    fn test_o9w7_byte_converter_factory_smaller() {
-        let mut factory = ByteConverterFactory::default();
-        factory.register::<u8>();
+    fn test_o9w7_byte_converter_factory_with_trait_satisfied() {
+
+        trait ConsumesValue {
+            type TValue;
+
+            fn consume_value(&mut self, value: impl GetValue<TValue = Self::TValue>);
+        }
+
+        impl ConsumesValue for Option<u8>
+        {
+            type TValue = u8;
+
+            fn consume_value(&mut self, value: impl GetValue<TValue = Self::TValue>) {
+                let next = value.get_value();
+                *self = next;
+            }
+        }
+        trait GetValue {
+            type TValue;
+
+            fn get_value(&self) -> Option<Self::TValue> where Self: Sized;
+        }
+
+        impl GetValue for u8
+        {
+            type TValue = u8;
+
+            fn get_value(&self) -> Option<Self::TValue> {
+                Some(*self)
+            }
+        }
+
+        fn apply_u8<TByteConverter>(previous: &mut Option<u8>, byte_converter: TByteConverter) -> Result<Option<u8>, Box<dyn std::error::Error + Send + Sync + 'static>>
+        where
+            TByteConverter: ByteConverter + GetValue<TValue = u8>,
+        {
+            let output = *previous;
+            previous.consume_value(byte_converter);
+            Ok(output)
+        }
+        let mut factory = ByteConverterFactory::new();
+        factory.register::<u8>(apply_u8);
 
         let test_value = 123u8;
         let test_value_bytes = test_value.to_vec_bytes().unwrap();
         let type_id = std::any::TypeId::of::<u8>();
-        
-        // we can get the value generated at the same time, but we might as well use T::extract_from_bytes ourselves
-        let generated_value = *factory.generate(type_id, &test_value_bytes).unwrap().downcast::<u8>().unwrap();
-        assert_eq!(test_value, generated_value);
+        let mut previous: Option<u8> = None;
+
+        // you start with a Box<dyn Any> because we don't know the T
+        let mut index = 0;
+        let output = factory.extract_from_bytes_and_apply(&mut previous, type_id, &test_value_bytes, &mut index).unwrap();
+
+        // downstream we can downcast when we know what T is
+        assert_eq!(None, output);
     }
 }

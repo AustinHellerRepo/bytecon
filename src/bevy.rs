@@ -529,3 +529,89 @@ impl ByteConverter for Transform {
         Ok(instance)
     }
 }
+
+impl ByteConverter for Text {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        self.0.append_to_bytes(bytes)?;
+        Ok(())
+    }
+    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        Ok(Self::new(String::extract_from_bytes(bytes, index)?))
+    }
+}
+
+impl ByteConverter for Text2d {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        self.0.append_to_bytes(bytes)?;
+        Ok(())
+    }
+    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        Ok(Self::new(String::extract_from_bytes(bytes, index)?))
+    }
+}
+
+impl ByteConverter for Color {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        match self {
+            Self::Srgba(value) => {
+                0u8.append_to_bytes(bytes)?;
+                value.red.append_to_bytes(bytes)?;
+                value.green.append_to_bytes(bytes)?;
+                value.blue.append_to_bytes(bytes)?;
+                value.alpha.append_to_bytes(bytes)?;
+            },
+            Self::LinearRgba(value) => {
+                1u8.append_to_bytes(bytes)?;
+                value.red.append_to_bytes(bytes)?;
+                value.green.append_to_bytes(bytes)?;
+                value.blue.append_to_bytes(bytes)?;
+                value.alpha.append_to_bytes(bytes)?;
+            },
+            Self::Hsla(value) => {
+                2u8.append_to_bytes(bytes)?;
+
+            },
+            Self::Hsva(value) => {
+                3u8.append_to_bytes(bytes)?;
+
+            },
+            Self::Hwba(value) => {
+                4u8.append_to_bytes(bytes)?;
+
+            },
+            Self::Laba(value) => {
+                5u8.append_to_bytes(bytes)?;
+
+            },
+            Self::Lcha(value) => {
+                6u8.append_to_bytes(bytes)?;
+
+            },
+            Self::Oklaba(value) => {
+                7u8.append_to_bytes(bytes)?;
+
+            },
+            Self::Oklcha(value) => {
+                8u8.append_to_bytes(bytes)?;
+
+            },
+            Self::Xyza(value) => {
+                9u8.append_to_bytes(bytes)?;
+
+            },
+        }
+        Ok(())
+    }
+    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        let enum_variant_byte = u8::extract_from_bytes(bytes, index)?;
+        match enum_variant_byte {
+            0u8 => Ok(Self::Srgba(Srgba {
+                red: f32::extract_from_bytes(bytes, index)?,
+                green: f32::extract_from_bytes(bytes, index)?,
+                blue: f32::extract_from_bytes(bytes, index)?,
+                alpha: f32::extract_from_bytes(bytes, index)?,
+            })),
+
+        }
+    }
+}
