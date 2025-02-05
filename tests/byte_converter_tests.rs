@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod byte_converter_tests {
-    use std::{collections::HashMap, ffi::CString, io::Cursor, path::PathBuf};
+    use std::{collections::HashMap, ffi::CString, io::Cursor, path::PathBuf, sync::Mutex};
     use bevy::{input::{keyboard::NativeKeyCode, mouse::MouseScrollUnit}, prelude::{Entity, KeyCode, MouseButton}};
     use bytecon::{ByteConverter, ByteConverterFactory, ByteStreamReader, ByteStreamWriter};
     use rand::SeedableRng;
@@ -334,13 +334,13 @@ mod byte_converter_tests {
     #[test]
     fn test_o9w7_byte_converter_factory() {
 
-        fn apply_u8<TByteConverter>(previous: &mut Option<u8>, byte_converter: TByteConverter) -> Result<Option<u8>, Box<dyn std::error::Error + Send + Sync + 'static>>
+        fn apply_u8<TByteConverter>(previous: &Mutex<Option<u8>>, byte_converter: TByteConverter) -> Result<Option<u8>, Box<dyn std::error::Error + Send + Sync + 'static>>
         where
             TByteConverter: ByteConverter,
         {
-            let output = *previous;
+            let output = *previous.lock().unwrap();
             let current = byte_converter.cast_via_bytes::<u8>()?;
-            *previous = Some(current);
+            *previous.lock().unwrap() = Some(current);
             Ok(output)
         }
         let mut factory = ByteConverterFactory::default();
@@ -349,11 +349,11 @@ mod byte_converter_tests {
         let test_value = 123u8;
         let test_value_bytes = test_value.to_vec_bytes().unwrap();
         let type_id = std::any::TypeId::of::<u8>();
-        let mut previous: Option<u8> = None;
+        let previous: Mutex<Option<u8>> = Mutex::new(None);
 
         // you start with a Box<dyn Any> because we don't know the T
         let mut index = 0;
-        let output = factory.extract_from_bytes_and_apply(&mut previous, type_id, &test_value_bytes, &mut index).unwrap();
+        let output = factory.extract_from_bytes_and_apply(&previous, type_id, &test_value_bytes, &mut index).unwrap();
 
         // downstream we can downcast when we know what T is
         assert_eq!(None, output);
@@ -392,12 +392,12 @@ mod byte_converter_tests {
             }
         }
 
-        fn apply_u8<TByteConverter>(previous: &mut Option<u8>, byte_converter: TByteConverter) -> Result<Option<u8>, Box<dyn std::error::Error + Send + Sync + 'static>>
+        fn apply_u8<TByteConverter>(previous: &Mutex<Option<u8>>, byte_converter: TByteConverter) -> Result<Option<u8>, Box<dyn std::error::Error + Send + Sync + 'static>>
         where
             TByteConverter: ByteConverter + GetValue<TValue = u8>,
         {
-            let output = *previous;
-            previous.consume_value(byte_converter);
+            let output = *previous.lock().unwrap();
+            previous.lock().unwrap().consume_value(byte_converter);
             Ok(output)
         }
         let mut factory = ByteConverterFactory::default();
@@ -406,11 +406,10 @@ mod byte_converter_tests {
         let test_value = 123u8;
         let test_value_bytes = test_value.to_vec_bytes().unwrap();
         let type_id = std::any::TypeId::of::<u8>();
-        let mut previous: Option<u8> = None;
+        let previous: Mutex<Option<u8>> = Mutex::new(None);
 
         // you start with a Box<dyn Any> because we don't know the T
-        let mut index = 0;
-        let output = factory.extract_from_bytes_and_apply(&mut previous, type_id, &test_value_bytes, &mut index).unwrap();
+        let output = factory.deserialize_from_bytes_and_apply(&previous, type_id, &test_value_bytes).unwrap();
 
         // downstream we can downcast when we know what T is
         assert_eq!(None, output);

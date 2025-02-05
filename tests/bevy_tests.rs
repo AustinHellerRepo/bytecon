@@ -3,25 +3,32 @@ mod bevy_tests {
     #[cfg(feature = "bevy")]
     #[test]
     fn bevy_serialize_entity() {
-        use std::error::Error;
+        use std::{error::Error, sync::Mutex};
 
         use bevy::{ecs::{component::Component, system::Commands, world::{CommandQueue, World}}, transform::components::Transform};
         use bytecon::{ByteConverter, ByteConverterFactory};
 
-        struct ByteConverterFactoryContext<'a, 'w, 's> {
-            commands: &'a mut Commands<'w, 's>,
+        struct ByteConverterFactoryContext<'w, 's> {
+            commands: Mutex<Commands<'w, 's>>,
         }
 
         let mut queue = CommandQueue::default();
         let mut world = World::default();
         world.register_component::<Transform>();
-        let mut commands = Commands::new(&mut queue, &mut world);
+        let commands = Mutex::new(Commands::new(&mut queue, &mut world));
 
-        fn apply_component<TByteConverter>(context: &mut ByteConverterFactoryContext, byte_converter: TByteConverter) -> Result<bool, Box<dyn Error + Send + Sync + 'static>>
+        fn apply_component<TByteConverter>(context: &ByteConverterFactoryContext, byte_converter: TByteConverter) -> Result<bool, Box<dyn Error + Send + Sync + 'static>>
         where
             TByteConverter: ByteConverter + Component,
         {
-            context.commands.spawn_empty().insert(byte_converter);
+            context.commands
+                .lock()
+                .map_err(|_| {
+                    let error: Box<dyn Error + Send + Sync + 'static> = "Failed to lock commands.".into();
+                    error
+                })?
+                .spawn_empty()
+                .insert(byte_converter);
             Ok(true)
         }
 
@@ -33,7 +40,7 @@ mod bevy_tests {
         let transform_bytes = transform.to_vec_bytes().unwrap();
 
         let mut context = ByteConverterFactoryContext {
-            commands: &mut commands,
+            commands,
         };
         let type_id = std::any::TypeId::of::<Transform>();
         let mut index = 0;

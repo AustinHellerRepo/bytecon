@@ -4,6 +4,7 @@ Allows for the convenient conversion of types from and to arrays of bytes.
 # Features
 * Default
   * Usage of the ByteCon trait allows for appending and extracting bytes from a byte array. This is very useful for interacting with a byte stream.
+  * ByteConverterFactory allows for generic registration of implementation of ByteConverter, allowing for generic usage by TypeId, returning an output value.
 * `"burn"`
   * Contains implementations for the `burn` crate.
     * Excludes: `DType`
