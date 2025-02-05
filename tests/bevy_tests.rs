@@ -17,15 +17,15 @@ mod bevy_tests {
         world.register_component::<Transform>();
         let mut commands = Commands::new(&mut queue, &mut world);
 
-        fn apply_component<TByteConverter>(context: &mut ByteConverterFactoryContext, byte_converter: TByteConverter) -> Result<(), Box<dyn Error + Send + Sync + 'static>>
+        fn apply_component<TByteConverter>(context: &mut ByteConverterFactoryContext, byte_converter: TByteConverter) -> Result<bool, Box<dyn Error + Send + Sync + 'static>>
         where
             TByteConverter: ByteConverter + Component,
         {
             context.commands.spawn_empty().insert(byte_converter);
-            Ok(())
+            Ok(true)
         }
 
-        let mut byte_converter_factory = ByteConverterFactory::<ByteConverterFactoryContext, ()>::new();
+        let mut byte_converter_factory = ByteConverterFactory::<ByteConverterFactoryContext, bool>::default();
         byte_converter_factory
             .register::<Transform>(apply_component);
 
@@ -38,6 +38,6 @@ mod bevy_tests {
         let type_id = std::any::TypeId::of::<Transform>();
         let mut index = 0;
         let output = byte_converter_factory.extract_from_bytes_and_apply(&mut context, type_id, &transform_bytes, &mut index).unwrap();
-
+        assert!(output);
     }
 }

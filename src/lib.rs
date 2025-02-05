@@ -27,7 +27,7 @@ pub mod rustls;
 #[cfg(feature = "tokio")]
 pub mod tokio;
 
-pub trait ByteConverter: Any {
+pub trait ByteConverter {
     fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error + Send + Sync + 'static>>;
     fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized;
     fn to_vec_bytes(&self) -> Result<Vec<u8>, Box<dyn Error + Send + Sync + 'static>> {
@@ -37,13 +37,18 @@ pub trait ByteConverter: Any {
     }
     fn clone_via_bytes(&self) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
         let bytes = self.to_vec_bytes()?;
-        let mut index = 0;
-        Self::extract_from_bytes(&bytes, &mut index)
+        Self::deserialize_from_bytes(&bytes)
     }
+    // this is useful if you know that there is only one type contained within the collection of bytes
     fn deserialize_from_bytes(bytes: &Vec<u8>) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
         let mut index = 0;
-        Self::extract_from_bytes(bytes, &mut index)
+        let instance = Self::extract_from_bytes(bytes, &mut index)?;
+        if index != bytes.len() {
+            return Err("The provided bytes contained more than one instance of a type. Deserializing did not exhaust the total length of the provided bytes.".into());
+        }
+        Ok(instance)
     }
+    // this is useful if you only have a generic TByteConverter as self but you can guarantee that it is a specific type based on your own logic
     fn cast_via_bytes<TByteConverter>(&self) -> Result<TByteConverter, Box<dyn Error + Send + Sync + 'static>> where TByteConverter: ByteConverter {
         let bytes = self.to_vec_bytes()?;
         TByteConverter::deserialize_from_bytes(&bytes)
@@ -828,39 +833,57 @@ tuple_byte_converter!(0 T1, 1 T2, 2 T3, 3 T4, 4 T5, 5 T6, 6 T7, 7 T8, 8 T9, 9 T1
 impl<TRead: std::io::Read> ByteStreamReader for TRead {
     fn read_to_byte_converter<T: ByteConverter>(&mut self) -> Result<T, Box<dyn Error + Send + Sync + 'static>> {
         let mut bytes = Vec::new();
-        let mut chunk = [0u8; 64];
+        const CHUNK_SIZE: usize = 1024;
+        let mut chunk = [0u8; CHUNK_SIZE];
 
+        // read the number of bytes we are expecting to read as part of the deserialization to T
         let mut initial_packet = [0u8; 8];
         let read_result = self.read_exact(&mut initial_packet);
         if let Err(error) = read_result {
             let result: Result<T, Box<dyn Error + Send + Sync + 'static>> = Err(Box::new(error));
             return result;
         }
-
         let expected_bytes_length: u64 = u64::from_le_bytes(initial_packet);
+
+        // loop over self and read out bytes until we have reach the expected number of bytes
         while (bytes.len() as u64) < expected_bytes_length {
-            let read_bytes_length_result = self.read(&mut chunk);
-            if let Err(error) = read_bytes_length_result {
-                let result: Result<T, Box<dyn Error + Send + Sync + 'static>> = Err(Box::new(error));
-                return result;
+            let expected_remaining_bytes_length = expected_bytes_length - bytes.len() as u64;
+            if expected_remaining_bytes_length >= CHUNK_SIZE as u64 {
+                let read_bytes_length_result = self.read(&mut chunk);
+                if let Err(error) = read_bytes_length_result {
+                    let result: Result<T, Box<dyn Error + Send + Sync + 'static>> = Err(Box::new(error));
+                    return result;
+                };
+                let read_bytes_length = read_bytes_length_result.unwrap();
+                if read_bytes_length != 0 {
+                    bytes.extend_from_slice(&chunk[..read_bytes_length]);
+                }
             }
-
-            let read_bytes_length = read_bytes_length_result.unwrap();
-
-            if read_bytes_length != 0 {
-                bytes.extend_from_slice(&chunk[..read_bytes_length]);
+            else {
+                // the remaining bytes is less than the chunk size, so only grab the remaining bytes
+                let mut smaller_chunk = vec![0u8; expected_remaining_bytes_length as usize];
+                let read_bytes_length_result = self.read(&mut smaller_chunk);
+                if let Err(error) = read_bytes_length_result {
+                    let result: Result<T, Box<dyn Error + Send + Sync + 'static>> = Err(Box::new(error));
+                    return result;
+                };
+                let read_bytes_length = read_bytes_length_result.unwrap();
+                if read_bytes_length != 0 {
+                    bytes.extend_from_slice(&smaller_chunk[..read_bytes_length]);
+                }
             }
         }
 
-        let mut index = 0;
-        T::extract_from_bytes(&bytes, &mut index)
+        // we are explicitly pulling out the exact number of bytes for T to deserialize
+        T::deserialize_from_bytes(&bytes)
     }
 }
 
 impl<TWrite: std::io::Write> ByteStreamWriter for TWrite {
     fn write_from_byte_converter(&mut self, byte_converter: &impl ByteConverter) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
-        let mut stream_bytes = Vec::new();
-        byte_converter.append_to_bytes(&mut stream_bytes)?;
+        let stream_bytes = byte_converter.to_vec_bytes()?;
+        let stream_bytes_length: u64 = stream_bytes.len() as u64;
+        self.write(&stream_bytes_length.to_le_bytes())?;
         self.write(&stream_bytes)?;
         Ok(())
     }
@@ -894,15 +917,6 @@ struct TypedByteConverterRegistration<TContext, TOutput, TByteConverter> {
 }
 
 impl<TContext, TOutput, TByteConverter> TypedByteConverterRegistration<TContext, TOutput, TByteConverter> {
-    fn new(
-        extract_from_bytes_function: fn(&Vec<u8>, &mut usize) -> Result<TByteConverter, Box<dyn Error + Send + Sync + 'static>>,
-        apply_function: fn(&mut TContext, TByteConverter) -> Result<TOutput, Box<dyn Error + Send + Sync + 'static>>,
-    ) -> Self {
-        Self {
-            extract_from_bytes_function,
-            apply_function,
-        }
-    }
     fn extract_from_bytes_and_apply(&self, context: &mut TContext, bytes: &Vec<u8>, index: &mut usize) -> Result<TOutput, Box<dyn Error + Send + Sync + 'static>> {
         let byte_converter = (self.extract_from_bytes_function)(bytes, index)?;
         (self.apply_function)(context, byte_converter)
@@ -920,7 +934,7 @@ struct UntypedByteConverterRegistration<TContext, TOutput> {
 impl<TContext, TOutput> UntypedByteConverterRegistration<TContext, TOutput> {
     pub fn new<TByteConverter>(apply_function: fn(&mut TContext, TByteConverter) -> Result<TOutput, Box<dyn Error + Send + Sync + 'static>>) -> Self
     where
-        TByteConverter: ByteConverter,
+        TByteConverter: ByteConverter + Any,
     {
         Self {
             type_id: std::any::TypeId::of::<TByteConverter>(),
@@ -951,15 +965,18 @@ pub struct ByteConverterFactory<TContext, TOutput> {
     untyped_byte_converter_registration_per_type_id: HashMap<TypeId, (UntypedByteConverterRegistration<TContext, TOutput>, fn(&UntypedByteConverterRegistration<TContext, TOutput>, &mut TContext, &Vec<u8>, &mut usize) -> Result<TOutput, Box<dyn Error + Send + Sync + 'static>>)>,
 }
 
-impl<TContext, TOutput> ByteConverterFactory<TContext, TOutput> {
-    pub fn new() -> Self {
+impl<TContext, TOutput> Default for ByteConverterFactory<TContext, TOutput> {
+    fn default() -> Self {
         Self {
             untyped_byte_converter_registration_per_type_id: HashMap::new(),
         }
     }
+}
+
+impl<TContext, TOutput> ByteConverterFactory<TContext, TOutput> {
     pub fn register<TByteConverter>(&mut self, apply_function: fn(&mut TContext, TByteConverter) -> Result<TOutput, Box<dyn Error + Send + Sync + 'static>>) -> &mut Self
     where
-        TByteConverter: ByteConverter,
+        TByteConverter: ByteConverter + Any,
     {
         let untyped_byte_converter_registration = UntypedByteConverterRegistration::new::<TByteConverter>(apply_function);
         self.untyped_byte_converter_registration_per_type_id.insert(

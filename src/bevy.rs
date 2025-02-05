@@ -1,6 +1,6 @@
 use bevy::{input::{keyboard::NativeKeyCode, mouse::MouseScrollUnit}, prelude::*};
 use crate::ByteConverter;
-use std::{any::TypeId, collections::HashMap, error::Error, mem};
+use std::error::Error;
 
 impl ByteConverter for KeyCode {
     fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
@@ -569,35 +569,59 @@ impl ByteConverter for Color {
             },
             Self::Hsla(value) => {
                 2u8.append_to_bytes(bytes)?;
-
+                value.hue.append_to_bytes(bytes)?;
+                value.saturation.append_to_bytes(bytes)?;
+                value.lightness.append_to_bytes(bytes)?;
+                value.alpha.append_to_bytes(bytes)?;
             },
             Self::Hsva(value) => {
                 3u8.append_to_bytes(bytes)?;
-
+                value.hue.append_to_bytes(bytes)?;
+                value.saturation.append_to_bytes(bytes)?;
+                value.value.append_to_bytes(bytes)?;
+                value.alpha.append_to_bytes(bytes)?;
             },
             Self::Hwba(value) => {
                 4u8.append_to_bytes(bytes)?;
-
+                value.hue.append_to_bytes(bytes)?;
+                value.whiteness.append_to_bytes(bytes)?;
+                value.blackness.append_to_bytes(bytes)?;
+                value.alpha.append_to_bytes(bytes)?;
             },
             Self::Laba(value) => {
                 5u8.append_to_bytes(bytes)?;
-
+                value.lightness.append_to_bytes(bytes)?;
+                value.a.append_to_bytes(bytes)?;
+                value.b.append_to_bytes(bytes)?;
+                value.alpha.append_to_bytes(bytes)?;
             },
             Self::Lcha(value) => {
                 6u8.append_to_bytes(bytes)?;
-
+                value.lightness.append_to_bytes(bytes)?;
+                value.chroma.append_to_bytes(bytes)?;
+                value.hue.append_to_bytes(bytes)?;
+                value.alpha.append_to_bytes(bytes)?;
             },
             Self::Oklaba(value) => {
                 7u8.append_to_bytes(bytes)?;
-
+                value.lightness.append_to_bytes(bytes)?;
+                value.a.append_to_bytes(bytes)?;
+                value.b.append_to_bytes(bytes)?;
+                value.alpha.append_to_bytes(bytes)?;
             },
             Self::Oklcha(value) => {
                 8u8.append_to_bytes(bytes)?;
-
+                value.lightness.append_to_bytes(bytes)?;
+                value.chroma.append_to_bytes(bytes)?;
+                value.hue.append_to_bytes(bytes)?;
+                value.alpha.append_to_bytes(bytes)?;
             },
             Self::Xyza(value) => {
                 9u8.append_to_bytes(bytes)?;
-
+                value.x.append_to_bytes(bytes)?;
+                value.y.append_to_bytes(bytes)?;
+                value.z.append_to_bytes(bytes)?;
+                value.alpha.append_to_bytes(bytes)?;
             },
         }
         Ok(())
@@ -611,7 +635,71 @@ impl ByteConverter for Color {
                 blue: f32::extract_from_bytes(bytes, index)?,
                 alpha: f32::extract_from_bytes(bytes, index)?,
             })),
-
+            1u8 => Ok(Self::LinearRgba(LinearRgba {
+                red: f32::extract_from_bytes(bytes, index)?,
+                green: f32::extract_from_bytes(bytes, index)?,
+                blue: f32::extract_from_bytes(bytes, index)?,
+                alpha: f32::extract_from_bytes(bytes, index)?,
+            })),
+            2u8 => Ok(Self::Hsla(Hsla {
+                hue: f32::extract_from_bytes(bytes, index)?,
+                saturation: f32::extract_from_bytes(bytes, index)?,
+                lightness: f32::extract_from_bytes(bytes, index)?,
+                alpha: f32::extract_from_bytes(bytes, index)?,
+            })),
+            3u8 => Ok(Self::Hsva(Hsva {
+                hue: f32::extract_from_bytes(bytes, index)?,
+                saturation: f32::extract_from_bytes(bytes, index)?,
+                value: f32::extract_from_bytes(bytes, index)?,
+                alpha: f32::extract_from_bytes(bytes, index)?,
+            })),
+            4u8 => Ok(Self::Hwba(Hwba {
+                hue: f32::extract_from_bytes(bytes, index)?,
+                whiteness: f32::extract_from_bytes(bytes, index)?,
+                blackness: f32::extract_from_bytes(bytes, index)?,
+                alpha: f32::extract_from_bytes(bytes, index)?,
+            })),
+            5u8 => Ok(Self::Laba(Laba {
+                lightness: f32::extract_from_bytes(bytes, index)?,
+                a: f32::extract_from_bytes(bytes, index)?,
+                b: f32::extract_from_bytes(bytes, index)?,
+                alpha: f32::extract_from_bytes(bytes, index)?,
+            })),
+            6u8 => Ok(Self::Lcha(Lcha {
+                lightness: f32::extract_from_bytes(bytes, index)?,
+                chroma: f32::extract_from_bytes(bytes, index)?,
+                hue: f32::extract_from_bytes(bytes, index)?,
+                alpha: f32::extract_from_bytes(bytes, index)?,
+            })),
+            7u8 => Ok(Self::Oklaba(Oklaba {
+                lightness: f32::extract_from_bytes(bytes, index)?,
+                a: f32::extract_from_bytes(bytes, index)?,
+                b: f32::extract_from_bytes(bytes, index)?,
+                alpha: f32::extract_from_bytes(bytes, index)?,
+            })),
+            8u8 => Ok(Self::Oklcha(Oklcha {
+                lightness: f32::extract_from_bytes(bytes, index)?,
+                chroma: f32::extract_from_bytes(bytes, index)?,
+                hue: f32::extract_from_bytes(bytes, index)?,
+                alpha: f32::extract_from_bytes(bytes, index)?,
+            })),
+            9u8 => Ok(Self::Xyza(Xyza {
+                x: f32::extract_from_bytes(bytes, index)?,
+                y: f32::extract_from_bytes(bytes, index)?,
+                z: f32::extract_from_bytes(bytes, index)?,
+                alpha: f32::extract_from_bytes(bytes, index)?,
+            })),
+            _ => Err("Unexpected enum variant byte.".into()),
         }
+    }
+}
+
+impl ByteConverter for TextColor {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        self.0.append_to_bytes(bytes)?;
+        Ok(())
+    }
+    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        Ok(Self(Color::extract_from_bytes(bytes, index)?))
     }
 }
