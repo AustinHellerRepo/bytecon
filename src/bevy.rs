@@ -1,4 +1,4 @@
-use bevy::{input::{keyboard::NativeKeyCode, mouse::MouseScrollUnit}, prelude::*};
+use bevy::{input::{keyboard::NativeKeyCode, mouse::MouseScrollUnit}, math::Affine3, prelude::*};
 use crate::ByteConverter;
 use std::error::Error;
 
@@ -701,5 +701,19 @@ impl ByteConverter for TextColor {
     }
     fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
         Ok(Self(Color::extract_from_bytes(bytes, index)?))
+    }
+}
+
+impl ByteConverter for Affine3 {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
+        self.matrix3.append_to_bytes(bytes)?;
+        self.translation.append_to_bytes(bytes)?;
+        Ok(())
+    }
+    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
+        Ok(Self {
+            matrix3: Mat3::extract_from_bytes(bytes, index)?,
+            translation: Vec3::extract_from_bytes(bytes, index)?,
+        })
     }
 }
