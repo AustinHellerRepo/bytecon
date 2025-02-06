@@ -34,3 +34,10 @@ serde = { version = "1" }
 thiserror = { version = "2" }
 tokio = { version = "1", features = ["full"], optional = true }
 tokio-rustls = { version = "0.23", optional = true }
+
+[dev-dependencies]
+criterion = { version = "0.5" }
+
+[[bench]]
+name = "bincode_bench"
+harness = false
