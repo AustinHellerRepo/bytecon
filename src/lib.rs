@@ -2,6 +2,7 @@ use std::{any::{Any, TypeId}, cell::RefCell, collections::{HashMap, VecDeque}, e
 
 // TODO add a version byte at the front of each append_to_bytes call
 //      this can be used to match on within the extract so that changes in format across versions of this crate are unaffected
+// TODO replace string errors with usage of ByteConverterError variants
 
 #[cfg(feature = "bevy")]
 pub mod bevy;
