@@ -3,6 +3,7 @@ use tokio::{io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt}, net::TcpSt
 use tokio_rustls::TlsStream;
 use crate::{ByteConverter, ByteStreamReaderAsync, ByteStreamWriterAsync};
 
+#[inline(always)]
 async fn read_to_byte_converter<TOutput: ByteConverter, TStream: AsyncWrite + AsyncRead + Unpin>(stream: &mut TStream) -> Result<TOutput, Box<dyn Error + Send + Sync + 'static>> {
     let usize_length = {
         // byte
@@ -75,60 +76,62 @@ async fn read_to_byte_converter<TOutput: ByteConverter, TStream: AsyncWrite + As
         }
     }
 
-    let mut index = 0;
-    TOutput::extract_from_bytes(&bytes, &mut index)
+    TOutput::deserialize_from_bytes(&bytes)
 }
 
+#[inline(always)]
 async fn write_from_byte_converter<TStream: AsyncWrite + AsyncRead + Unpin>(stream: &mut TStream, byte_converter: &impl crate::ByteConverter) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
-    let mut byte_converter_bytes = Vec::new();
-    byte_converter.append_to_bytes(&mut byte_converter_bytes)?;
-    let byte_converter_bytes_length = byte_converter_bytes.len();
-    let mut bytes = Vec::new();
-    byte_converter_bytes_length.append_to_bytes(&mut bytes)?;
-    bytes.extend_from_slice(&byte_converter_bytes);
-    stream.write(&bytes)
+    let byte_converter_bytes = byte_converter.to_vec_bytes()?;
+    let byte_converter_bytes_length_bytes = byte_converter_bytes.len().to_vec_bytes()?;
+    stream.write(&byte_converter_bytes_length_bytes)
+        .await?;
+    stream.write(&byte_converter_bytes)
         .await?;
     Ok(())
 }
 
 impl ByteStreamReaderAsync for TcpStream {
+    #[inline(always)]
     async fn read_to_byte_converter<T: ByteConverter>(&mut self) -> Result<T, Box<dyn Error + Send + Sync + 'static>> {
         read_to_byte_converter(self).await
     }
 }
 
 impl ByteStreamWriterAsync for TcpStream {
+    #[inline(always)]
     async fn write_from_byte_converter(&mut self, byte_converter: &impl ByteConverter) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
         write_from_byte_converter(self, byte_converter).await
     }
 }
 
 impl<TStream: AsyncWrite + AsyncRead + Unpin> ByteStreamReaderAsync for TlsStream<TStream> {
+    #[inline(always)]
     async fn read_to_byte_converter<T: ByteConverter>(&mut self) -> Result<T, Box<dyn Error + Send + Sync + 'static>> {
         read_to_byte_converter(self).await
     }
 }
 
 impl<TStream: AsyncWrite + AsyncRead + Unpin> ByteStreamWriterAsync for TlsStream<TStream> {
+    #[inline(always)]
     async fn write_from_byte_converter(&mut self, byte_converter: &impl crate::ByteConverter) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
         write_from_byte_converter(self, byte_converter).await
     }
 }
 
 impl ByteStreamReaderAsync for tokio::sync::mpsc::Receiver<Vec<u8>> {
+    #[inline(always)]
     async fn read_to_byte_converter<T: ByteConverter>(&mut self) -> Result<T, Box<dyn Error + Send + Sync + 'static>> {
         let bytes = self.recv()
             .await
             .ok_or(TokioByteConError::OptionVariantNoneReceivedFromReceiver)?;
-        let mut index = 0;
-        T::extract_from_bytes(&bytes, &mut index)
+        T::deserialize_from_bytes(&bytes)
     }
 }
 
 impl ByteStreamWriterAsync for tokio::sync::mpsc::Sender<Vec<u8>> {
+    #[inline(always)]
     async fn write_from_byte_converter(&mut self, byte_converter: &impl ByteConverter) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
-        let mut bytes = Vec::new();
-        byte_converter.append_to_bytes(&mut bytes)?;
+        let bytes = byte_converter.to_vec_bytes()?;
         self.send(bytes)
             .await?;
         Ok(())
