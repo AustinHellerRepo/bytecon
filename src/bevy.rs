@@ -3,6 +3,7 @@ use crate::ByteConverter;
 use std::error::Error;
 
 impl ByteConverter for KeyCode {
+    #[inline(always)]
     fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
         match self {
             Self::Abort => 0u8.append_to_bytes(bytes)?,
@@ -206,6 +207,7 @@ impl ByteConverter for KeyCode {
         }
         Ok(())
     }
+    #[inline(always)]
     fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
         let enum_variant_byte = u8::extract_from_bytes(bytes, index)?;
         match enum_variant_byte {
@@ -410,6 +412,7 @@ impl ByteConverter for KeyCode {
 }
 
 impl ByteConverter for NativeKeyCode {
+    #[inline(always)]
     fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
         match self {
             Self::Android(scan_code) => {
@@ -432,6 +435,7 @@ impl ByteConverter for NativeKeyCode {
         }
         Ok(())
     }
+    #[inline(always)]
     fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
         let enum_variant_byte = u8::extract_from_bytes(bytes, index)?;
         match enum_variant_byte {
@@ -458,6 +462,7 @@ impl ByteConverter for NativeKeyCode {
 }
 
 impl ByteConverter for MouseButton {
+    #[inline(always)]
     fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
         match self {
             Self::Back => 0u8.append_to_bytes(bytes)?,
@@ -472,6 +477,7 @@ impl ByteConverter for MouseButton {
         }
         Ok(())
     }
+    #[inline(always)]
     fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
         let enum_variant_byte = u8::extract_from_bytes(bytes, index)?;
         match enum_variant_byte {
@@ -487,6 +493,7 @@ impl ByteConverter for MouseButton {
 }
 
 impl ByteConverter for MouseScrollUnit {
+    #[inline(always)]
     fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
         match self {
             Self::Line => 0u8.append_to_bytes(bytes)?,
@@ -494,6 +501,7 @@ impl ByteConverter for MouseScrollUnit {
         }
         Ok(())
     }
+    #[inline(always)]
     fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
         let enum_variant_byte = u8::extract_from_bytes(bytes, index)?;
         match enum_variant_byte {
@@ -505,22 +513,26 @@ impl ByteConverter for MouseScrollUnit {
 }
 
 impl ByteConverter for Entity {
+    #[inline(always)]
     fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
         self.to_bits().append_to_bytes(bytes)?;
         Ok(())
     }
+    #[inline(always)]
     fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
         Ok(Self::from_bits(u64::extract_from_bytes(bytes, index)?))
     }
 }
 
 impl ByteConverter for Transform {
+    #[inline(always)]
     fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
         self.rotation.append_to_bytes(bytes)?;
         self.scale.append_to_bytes(bytes)?;
         self.translation.append_to_bytes(bytes)?;
         Ok(())
     }
+    #[inline(always)]
     fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
         let mut instance = Self::default();
         instance.rotation = Quat::extract_from_bytes(bytes, index)?;
@@ -531,26 +543,31 @@ impl ByteConverter for Transform {
 }
 
 impl ByteConverter for Text {
+    #[inline(always)]
     fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
         self.0.append_to_bytes(bytes)?;
         Ok(())
     }
+    #[inline(always)]
     fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
         Ok(Self::new(String::extract_from_bytes(bytes, index)?))
     }
 }
 
 impl ByteConverter for Text2d {
+    #[inline(always)]
     fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
         self.0.append_to_bytes(bytes)?;
         Ok(())
     }
+    #[inline(always)]
     fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
         Ok(Self::new(String::extract_from_bytes(bytes, index)?))
     }
 }
 
 impl ByteConverter for Color {
+    #[inline(always)]
     fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
         match self {
             Self::Srgba(value) => {
@@ -626,6 +643,7 @@ impl ByteConverter for Color {
         }
         Ok(())
     }
+    #[inline(always)]
     fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
         let enum_variant_byte = u8::extract_from_bytes(bytes, index)?;
         match enum_variant_byte {
@@ -695,21 +713,25 @@ impl ByteConverter for Color {
 }
 
 impl ByteConverter for TextColor {
+    #[inline(always)]
     fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
         self.0.append_to_bytes(bytes)?;
         Ok(())
     }
+    #[inline(always)]
     fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
         Ok(Self(Color::extract_from_bytes(bytes, index)?))
     }
 }
 
 impl ByteConverter for Affine3 {
+    #[inline(always)]
     fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
         self.matrix3.append_to_bytes(bytes)?;
         self.translation.append_to_bytes(bytes)?;
         Ok(())
     }
+    #[inline(always)]
     fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
         Ok(Self {
             matrix3: Mat3::extract_from_bytes(bytes, index)?,

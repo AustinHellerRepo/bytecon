@@ -3,6 +3,7 @@ use burn::tensor::{DType, TensorData};
 use crate::ByteConverter;
 
 impl ByteConverter for TensorData {
+    #[inline(always)]
     fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
 
         // slice
@@ -16,6 +17,7 @@ impl ByteConverter for TensorData {
 
         Ok(())
     }
+    #[inline(always)]
     fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
         
         // slice
