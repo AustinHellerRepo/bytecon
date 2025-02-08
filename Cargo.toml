@@ -11,6 +11,7 @@ keywords = ["encoding", "trait", "serialization", "networking", "streaming"]
 categories = ["encoding"]
 
 [features]
+default = ["base"]
 base = []
 burn = ["dep:burn"]
 burn_dtype = ["dep:burn"]
