@@ -5,6 +5,9 @@ Allows for the convenient conversion of types from and to arrays of bytes.
 * Default
   * Usage of the ByteCon trait allows for appending and extracting bytes from a byte array. This is very useful for interacting with a byte stream.
   * ByteConverterFactory allows for generic registration of implementation of ByteConverter, allowing for generic usage by TypeId, returning an output value.
+* `"base"`
+  * The default feature that implements `ByteConverter` for many standard Rust types
+  * These can be disabled using `default-features = false` if you wish to implement your own byte structure yourself
 * `"burn"`
   * Contains implementations for the `burn` crate.
     * Excludes: `DType`
@@ -25,6 +28,8 @@ Allows for the convenient conversion of types from and to arrays of bytes.
   * Contains implementations for the `rustls` crate
 * `"bevy"`
   * Contains implementations for the `bevy` crate, version 0.15
+* `"glam"`
+  * Contains implementations for the `glam` crate
  
 # Coming soon
 * Additional implementations for other common crates
