@@ -643,26 +643,40 @@ mod byte_converter_tests {
     #[test]
     fn test_o9w7_byte_converter_factory() {
 
-        fn apply_u8<TByteConverter>(previous: &Mutex<Option<u8>>, byte_converter: TByteConverter) -> Result<Option<u8>, Box<dyn std::error::Error + Send + Sync + 'static>>
+        struct TestContext {
+            previous: Mutex<Option<u8>>,
+        }
+
+        struct SerializeContext {
+            static_bytes: Vec<u8>,
+        }
+
+        fn apply_u8<TByteConverter>(context: &TestContext, byte_converter: TByteConverter) -> Result<Option<u8>, Box<dyn std::error::Error + Send + Sync + 'static>>
         where
             TByteConverter: ByteConverter,
         {
-            let output = *previous.lock().unwrap();
+            let output = *context.previous.lock().unwrap();
             let current = byte_converter.cast_via_bytes::<u8>()?;
-            *previous.lock().unwrap() = Some(current);
+            *context.previous.lock().unwrap() = Some(current);
             Ok(output)
         }
+
+        fn serialize_u8(context: &SerializeContext) -> Result<Vec<u8>, Box<dyn Error + Send + Sync + 'static>> {
+            Ok(context.static_bytes.clone())
+        }
         let mut factory = ByteConverterFactory::default();
-        factory.register::<u8>(apply_u8);
+        factory.register::<u8>(apply_u8, serialize_u8);
 
         let test_value = 123u8;
         let test_value_bytes = test_value.to_vec_bytes().unwrap();
         let type_id = std::any::TypeId::of::<u8>();
-        let previous: Mutex<Option<u8>> = Mutex::new(None);
+        let extract_context = TestContext {
+            previous: Mutex::new(None),
+        };
 
         // you start with a Box<dyn Any> because we don't know the T
         let mut index = 0;
-        let output = factory.extract_from_bytes_and_apply(&previous, type_id, &test_value_bytes, &mut index).unwrap();
+        let output = factory.extract_from_bytes_and_apply(&extract_context, type_id, &test_value_bytes, &mut index).unwrap();
 
         // downstream we can downcast when we know what T is
         assert_eq!(None, output);
@@ -701,6 +715,10 @@ mod byte_converter_tests {
             }
         }
 
+        struct SerializeContext {
+            static_bytes: Vec<u8>,
+        }
+
         fn apply_u8<TByteConverter>(previous: &Mutex<Option<u8>>, byte_converter: TByteConverter) -> Result<Option<u8>, Box<dyn std::error::Error + Send + Sync + 'static>>
         where
             TByteConverter: ByteConverter + GetValue<TValue = u8>,
@@ -709,8 +727,11 @@ mod byte_converter_tests {
             previous.lock().unwrap().consume_value(byte_converter);
             Ok(output)
         }
+        fn serialize_u8(context: &SerializeContext) -> Result<Vec<u8>, Box<dyn Error + Send + Sync + 'static>> {
+            Ok(context.static_bytes.clone())
+        }
         let mut factory = ByteConverterFactory::default();
-        factory.register::<u8>(apply_u8);
+        factory.register::<u8>(apply_u8, serialize_u8);
 
         let test_value = 123u8;
         let test_value_bytes = test_value.to_vec_bytes().unwrap();

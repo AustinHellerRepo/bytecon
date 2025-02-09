@@ -12,6 +12,10 @@ mod bevy_tests {
             commands: Mutex<Commands<'w, 's>>,
         }
 
+        struct SerializeComponentContext {
+            static_bytes: Vec<u8>,
+        }
+
         let mut queue = CommandQueue::default();
         let mut world = World::default();
         world.register_component::<Transform>();
@@ -32,9 +36,14 @@ mod bevy_tests {
             Ok(true)
         }
 
-        let mut byte_converter_factory = ByteConverterFactory::<ByteConverterFactoryContext, bool>::default();
+        fn serialize_component_from_context(context: &SerializeComponentContext) -> Result<Vec<u8>, Box<dyn Error + Send + Sync + 'static>>
+        {
+            Ok(context.static_bytes.clone())
+        }
+
+        let mut byte_converter_factory = ByteConverterFactory::<ByteConverterFactoryContext, SerializeComponentContext, bool>::default();
         byte_converter_factory
-            .register::<Transform>(apply_component);
+            .register::<Transform>(apply_component, serialize_component_from_context);
 
         let transform = Transform::from_xyz(1.0, 2.0, 3.0);
         let transform_bytes = transform.to_vec_bytes().unwrap();
