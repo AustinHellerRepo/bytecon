@@ -297,7 +297,7 @@ impl<TContext> SerializationByteConverterFactory<TContext>
     pub fn serialize(&self, context: &mut TContext, type_name: &str) -> Result<Vec<u8>, Box<dyn Error + Sync + Send + 'static>>
     {
         let Some((untyped_byte_converter_registration, apply)) = self.untyped_byte_converter_registration_per_type_name.get(&type_name) else {
-            return Err("TypeId not registered to any ByteConverter.".into());
+            return Err("type_name not registered to any ByteConverter.".into());
         };
         let output = apply(untyped_byte_converter_registration, context, type_name)?;
         Ok(output)
@@ -349,7 +349,7 @@ impl<TContext, TOutput> DeserializationByteConverterFactory<TContext, TOutput>
     pub fn deserialize(&self, context: &mut TContext, type_name: &str) -> Result<TOutput, Box<dyn Error + Sync + Send + 'static>>
     {
         let Some((untyped_byte_converter_registration, apply)) = self.untyped_byte_converter_registration_per_type_name.get(&type_name) else {
-            return Err("TypeId not registered to any ByteConverter.".into());
+            return Err("type_name not registered to any ByteConverter.".into());
         };
         let output = apply(untyped_byte_converter_registration, context)?;
         Ok(output)
