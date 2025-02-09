@@ -217,7 +217,7 @@ impl<TContext, TOutput> Default for ByteConverterFactory<TContext, TOutput> {
 impl<TContext, TOutput> ByteConverterFactory<TContext, TOutput> {
     pub fn register<TByteConverter>(&mut self, apply_function: fn(&TContext, TByteConverter) -> Result<TOutput, Box<dyn Error + Send + Sync + 'static>>) -> &mut Self
     where
-        TByteConverter: ByteConverter + Any,
+        TByteConverter: ByteConverter + 'static,
     {
         let untyped_byte_converter_registration = UntypedByteConverterRegistration::new::<TByteConverter>(apply_function);
         self.untyped_byte_converter_registration_per_type_id.insert(
@@ -228,6 +228,12 @@ impl<TContext, TOutput> ByteConverterFactory<TContext, TOutput> {
             ),
         );
         self
+    }
+    pub fn get_registered_type_ids(&self) -> Vec<TypeId> {
+        self.untyped_byte_converter_registration_per_type_id.keys()
+            .into_iter()
+            .cloned()
+            .collect::<Vec<TypeId>>()
     }
     #[inline(always)]
     pub fn extract_from_bytes_and_apply(&self, context: &TContext, type_id: TypeId, bytes: &Vec<u8>, index: &mut usize) -> Result<TOutput, Box<dyn Error + Sync + Send + 'static>>
