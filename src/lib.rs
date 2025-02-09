@@ -1,4 +1,4 @@
-use std::{any::{Any, TypeId}, collections::HashMap, error::Error, future::Future, io::Cursor, marker::PhantomData};
+use std::{any::Any, collections::HashMap, error::Error, future::Future, io::Cursor, marker::PhantomData};
 
 use bincode::Options;
 use serde::{de::DeserializeOwned, Serialize};
@@ -36,7 +36,7 @@ pub mod tokio;
 
 pub trait ByteConverter {
     fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error + Send + Sync + 'static>>;
-    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized;
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized;
     #[inline(always)]
     fn to_vec_bytes(&self) -> Result<Vec<u8>, Box<dyn Error + Send + Sync + 'static>> {
         let mut bytes = Vec::new();
@@ -56,10 +56,11 @@ pub trait ByteConverter {
     }
     // this is useful if you know that there is only one type contained within the collection of bytes
     #[inline(always)]
-    fn deserialize_from_bytes(bytes: &Vec<u8>) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+    fn deserialize_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        let bytes_ref = bytes.as_ref();
         let mut index = 0;
         let instance = Self::extract_from_bytes(bytes, &mut index)?;
-        if index != bytes.len() {
+        if index != bytes_ref.len() {
             return Err("The provided bytes contained more than one instance of a type. Deserializing did not exhaust the total length of the provided bytes.".into());
         }
         Ok(instance)
@@ -118,8 +119,9 @@ enum ByteConverterError {
 }
 
 #[inline(always)]
-fn get_single_byte(bytes: &Vec<u8>, index: &mut usize) -> Result<u8, Box<dyn Error + Send + Sync + 'static>> {
-    let bytes_length = bytes.len();
+fn get_single_byte<TBytes: AsRef<[u8]>>(bytes: TBytes, index: &mut usize) -> Result<u8, Box<dyn Error + Send + Sync + 'static>> {
+    let bytes_ref = bytes.as_ref();
+    let bytes_length = bytes_ref.len();
     let index_deref = *index;
     let next_index = index_deref + 1;
     if bytes_length < next_index {
@@ -128,14 +130,15 @@ fn get_single_byte(bytes: &Vec<u8>, index: &mut usize) -> Result<u8, Box<dyn Err
             length: bytes_length,
         }.into());
     }
-    let byte = bytes[index_deref];
+    let byte = bytes_ref[index_deref];
     *index = next_index;
     Ok(byte)
 }
 
 #[inline(always)]
-fn get_multiple_bytes<'a>(bytes: &'a Vec<u8>, index: &mut usize, size: usize) -> Result<&'a [u8], Box<dyn Error + Send + Sync + 'static>> {
-    let bytes_length = bytes.len();
+fn get_multiple_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize, size: usize) -> Result<&'a [u8], Box<dyn Error + Send + Sync + 'static>> {
+    let bytes_ref = bytes.as_ref();
+    let bytes_length = bytes_ref.len();
     let index_deref = *index;
     let next_index = index_deref + size;
     if bytes_length < next_index {
@@ -144,17 +147,28 @@ fn get_multiple_bytes<'a>(bytes: &'a Vec<u8>, index: &mut usize, size: usize) ->
             length: bytes_length,
         }.into());
     }
-    let multiple_bytes = &bytes[index_deref..next_index];
+    let multiple_bytes = &bytes_ref[index_deref..next_index];
     *index = next_index;
     Ok(multiple_bytes)
 }
 
-struct TypedByteConverterRegistration<TContext, TOutput, TByteConverter> {
+struct TypedSerializationByteConverterRegistration<TContext> {
+    extract_bytes_from_context_function: fn(&mut TContext, &str) -> Result<Vec<u8>, Box<dyn Error + Send + Sync + 'static>>,
+}
+
+impl<TContext> TypedSerializationByteConverterRegistration<TContext> {
+    #[inline(always)]
+    fn extract_bytes_from_context(&self, context: &mut TContext, type_name: &str) -> Result<Vec<u8>, Box<dyn Error + Send + Sync + 'static>> {
+        (self.extract_bytes_from_context_function)(context, type_name)
+    }
+}
+
+struct TypedDeserializationByteConverterRegistration<TContext, TOutput, TByteConverter> {
     extract_byte_converter_from_context_function: fn(&mut TContext) -> Result<TByteConverter, Box<dyn Error + Send + Sync + 'static>>,
     apply_function: fn(&mut TContext, TByteConverter) -> Result<TOutput, Box<dyn Error + Send + Sync + 'static>>,
 }
 
-impl<TContext, TOutput, TByteConverter> TypedByteConverterRegistration<TContext, TOutput, TByteConverter> {
+impl<TContext, TOutput, TByteConverter> TypedDeserializationByteConverterRegistration<TContext, TOutput, TByteConverter> {
     #[inline(always)]
     fn extract_byte_converter_from_context_and_apply(&self, context: &mut TContext) -> Result<TOutput, Box<dyn Error + Send + Sync + 'static>> {
         let byte_converter = (self.extract_byte_converter_from_context_function)(context)?;
@@ -162,15 +176,42 @@ impl<TContext, TOutput, TByteConverter> TypedByteConverterRegistration<TContext,
     }
 }
 
-struct UntypedByteConverterRegistration<TContext, TOutput> {
-    type_id: TypeId,
+struct UntypedSerializationByteConverterRegistration<TContext> {
+    type_name: &'static str,
+    extract_bytes_from_context_function: unsafe fn(),
+    phantom_context: std::marker::PhantomData<TContext>,
+}
+
+impl<TContext> UntypedSerializationByteConverterRegistration<TContext> {
+    pub fn new<TByteConverter>(
+        extract_bytes_from_context_function: fn(&mut TContext, &str) -> Result<Vec<u8>, Box<dyn Error + Send + Sync + 'static>>,
+    ) -> Self
+    where
+        TByteConverter: ByteConverter + Any,
+    {
+        Self {
+            type_name: std::any::type_name::<TByteConverter>(),
+            extract_bytes_from_context_function: unsafe { std::mem::transmute::<fn(&mut TContext, &str) -> Result<Vec<u8>, Box<dyn Error + Send + Sync + 'static>>, unsafe fn()>(extract_bytes_from_context_function) },
+            phantom_context: PhantomData::default(),
+        }
+    }
+    #[inline(always)]
+    fn cast<TByteConverter>(&self) -> TypedSerializationByteConverterRegistration<TContext> {
+        TypedSerializationByteConverterRegistration::<TContext> {
+            extract_bytes_from_context_function: unsafe { std::mem::transmute::<unsafe fn(), fn(&mut TContext, &str) -> Result<Vec<u8>, Box<dyn Error + Send + Sync + 'static>>>(self.extract_bytes_from_context_function) },
+        }
+    }
+}
+
+struct UntypedDeserializationByteConverterRegistration<TContext, TOutput> {
+    type_name: &'static str,
     extract_byte_converter_from_context_function: unsafe fn(),
     apply_function: unsafe fn(),
     phantom_context: std::marker::PhantomData<TContext>,
     phantom_output: std::marker::PhantomData<TOutput>,
 }
 
-impl<TContext, TOutput> UntypedByteConverterRegistration<TContext, TOutput> {
+impl<TContext, TOutput> UntypedDeserializationByteConverterRegistration<TContext, TOutput> {
     pub fn new<TByteConverter>(
         extract_byte_converter_from_context_function: fn(&mut TContext) -> Result<TByteConverter, Box<dyn Error + Send + Sync + 'static>>,
         apply_function: fn(&mut TContext, TByteConverter) -> Result<TOutput, Box<dyn Error + Send + Sync + 'static>>,
@@ -179,7 +220,7 @@ impl<TContext, TOutput> UntypedByteConverterRegistration<TContext, TOutput> {
         TByteConverter: ByteConverter + Any,
     {
         Self {
-            type_id: std::any::TypeId::of::<TByteConverter>(),
+            type_name: std::any::type_name::<TByteConverter>(),
             extract_byte_converter_from_context_function: unsafe { std::mem::transmute::<fn(&mut TContext) -> Result<TByteConverter, Box<dyn Error + Send + Sync + 'static>>, unsafe fn()>(extract_byte_converter_from_context_function) },
             apply_function: unsafe { std::mem::transmute::<fn(&mut TContext, TByteConverter) -> Result<TOutput, Box<dyn Error + Send + Sync + 'static>>, unsafe fn()>(apply_function) },
             phantom_context: PhantomData::default(),
@@ -187,8 +228,8 @@ impl<TContext, TOutput> UntypedByteConverterRegistration<TContext, TOutput> {
         }
     }
     #[inline(always)]
-    fn cast<TByteConverter>(&self) -> TypedByteConverterRegistration<TContext, TOutput, TByteConverter> {
-        TypedByteConverterRegistration::<TContext, TOutput, TByteConverter> {
+    fn cast<TByteConverter>(&self) -> TypedDeserializationByteConverterRegistration<TContext, TOutput, TByteConverter> {
+        TypedDeserializationByteConverterRegistration::<TContext, TOutput, TByteConverter> {
             extract_byte_converter_from_context_function: unsafe { std::mem::transmute::<unsafe fn(), fn(&mut TContext) -> Result<TByteConverter, Box<dyn Error + Send + Sync + 'static>>>(self.extract_byte_converter_from_context_function) },
             apply_function: unsafe { std::mem::transmute::<unsafe fn(), fn(&mut TContext, TByteConverter) -> Result<TOutput, Box<dyn Error + Send + Sync + 'static>>>(self.apply_function) },
         }
@@ -196,29 +237,89 @@ impl<TContext, TOutput> UntypedByteConverterRegistration<TContext, TOutput> {
 }
 
 #[inline(always)]
+fn extract_bytes_from_context<TContext, TByteConverter>(
+    untyped_byte_converter_registration: &UntypedSerializationByteConverterRegistration<TContext>,
+    context: &mut TContext,
+    type_name: &str,
+) -> Result<Vec<u8>, Box<dyn Error + Send + Sync + 'static>> {
+    untyped_byte_converter_registration.cast::<TByteConverter>().extract_bytes_from_context(context, type_name)
+}
+
+#[inline(always)]
 fn extract_byte_converter_from_context_and_apply<TContext, TOutput, TByteConverter>(
-    untyped_byte_converter_registration: &UntypedByteConverterRegistration<TContext, TOutput>,
+    untyped_byte_converter_registration: &UntypedDeserializationByteConverterRegistration<TContext, TOutput>,
     context: &mut TContext,
 ) -> Result<TOutput, Box<dyn Error + Send + Sync + 'static>> {
     untyped_byte_converter_registration.cast::<TByteConverter>().extract_byte_converter_from_context_and_apply(context)
 }
 
-pub struct ByteConverterFactory<TContext, TOutput> {
-    untyped_byte_converter_registration_per_type_id: HashMap<TypeId, (
-        UntypedByteConverterRegistration<TContext, TOutput>,
-        fn(&UntypedByteConverterRegistration<TContext, TOutput>, &mut TContext) -> Result<TOutput, Box<dyn Error + Send + Sync + 'static>>,
+pub struct SerializationByteConverterFactory<TContext> {
+    untyped_byte_converter_registration_per_type_name: HashMap<&'static str, (
+        UntypedSerializationByteConverterRegistration<TContext>,
+        fn(&UntypedSerializationByteConverterRegistration<TContext>, &mut TContext, &str) -> Result<Vec<u8>, Box<dyn Error + Send + Sync + 'static>>,
     )>,
 }
 
-impl<TContext, TOutput> Default for ByteConverterFactory<TContext, TOutput> {
+impl<TContext> Default for SerializationByteConverterFactory<TContext> {
     fn default() -> Self {
         Self {
-            untyped_byte_converter_registration_per_type_id: HashMap::new(),
+            untyped_byte_converter_registration_per_type_name: HashMap::new(),
         }
     }
 }
 
-impl<TContext, TOutput> ByteConverterFactory<TContext, TOutput>
+impl<TContext> SerializationByteConverterFactory<TContext>
+{
+    pub fn register<TByteConverter>(
+        &mut self,
+        extract_bytes_from_context_function: fn(&mut TContext, &str) -> Result<Vec<u8>, Box<dyn Error + Send + Sync + 'static>>,
+    ) -> &mut Self
+    where
+        TByteConverter: ByteConverter + 'static,
+    {
+        let untyped_byte_converter_registration = UntypedSerializationByteConverterRegistration::new::<TByteConverter>(extract_bytes_from_context_function);
+        self.untyped_byte_converter_registration_per_type_name.insert(
+            untyped_byte_converter_registration.type_name,
+            (
+                untyped_byte_converter_registration,
+                extract_bytes_from_context::<TContext, TByteConverter>,
+            ),
+        );
+        self
+    }
+    pub fn get_registered_type_names(&self) -> Vec<&'static str> {
+        self.untyped_byte_converter_registration_per_type_name.keys()
+            .into_iter()
+            .cloned()
+            .collect::<Vec<_>>()
+    }
+    #[inline(always)]
+    pub fn serialize(&self, context: &mut TContext, type_name: &str) -> Result<Vec<u8>, Box<dyn Error + Sync + Send + 'static>>
+    {
+        let Some((untyped_byte_converter_registration, apply)) = self.untyped_byte_converter_registration_per_type_name.get(&type_name) else {
+            return Err("TypeId not registered to any ByteConverter.".into());
+        };
+        let output = apply(untyped_byte_converter_registration, context, type_name)?;
+        Ok(output)
+    }
+}
+
+pub struct DeserializationByteConverterFactory<TContext, TOutput> {
+    untyped_byte_converter_registration_per_type_name: HashMap<&'static str, (
+        UntypedDeserializationByteConverterRegistration<TContext, TOutput>,
+        fn(&UntypedDeserializationByteConverterRegistration<TContext, TOutput>, &mut TContext) -> Result<TOutput, Box<dyn Error + Send + Sync + 'static>>,
+    )>,
+}
+
+impl<TContext, TOutput> Default for DeserializationByteConverterFactory<TContext, TOutput> {
+    fn default() -> Self {
+        Self {
+            untyped_byte_converter_registration_per_type_name: HashMap::new(),
+        }
+    }
+}
+
+impl<TContext, TOutput> DeserializationByteConverterFactory<TContext, TOutput>
 {
     pub fn register<TByteConverter>(
         &mut self,
@@ -228,9 +329,9 @@ impl<TContext, TOutput> ByteConverterFactory<TContext, TOutput>
     where
         TByteConverter: ByteConverter + 'static,
     {
-        let untyped_byte_converter_registration = UntypedByteConverterRegistration::new::<TByteConverter>(extract_byte_converter_from_context_function, apply_function);
-        self.untyped_byte_converter_registration_per_type_id.insert(
-            untyped_byte_converter_registration.type_id,
+        let untyped_byte_converter_registration = UntypedDeserializationByteConverterRegistration::new::<TByteConverter>(extract_byte_converter_from_context_function, apply_function);
+        self.untyped_byte_converter_registration_per_type_name.insert(
+            untyped_byte_converter_registration.type_name,
             (
                 untyped_byte_converter_registration,
                 extract_byte_converter_from_context_and_apply::<TContext, TOutput, TByteConverter>,
@@ -238,16 +339,16 @@ impl<TContext, TOutput> ByteConverterFactory<TContext, TOutput>
         );
         self
     }
-    pub fn get_registered_type_ids(&self) -> Vec<TypeId> {
-        self.untyped_byte_converter_registration_per_type_id.keys()
+    pub fn get_registered_type_names(&self) -> Vec<&'static str> {
+        self.untyped_byte_converter_registration_per_type_name.keys()
             .into_iter()
             .cloned()
-            .collect::<Vec<TypeId>>()
+            .collect::<Vec<_>>()
     }
     #[inline(always)]
-    pub fn apply(&self, context: &mut TContext, type_id: TypeId) -> Result<TOutput, Box<dyn Error + Sync + Send + 'static>>
+    pub fn deserialize(&self, context: &mut TContext, type_name: &str) -> Result<TOutput, Box<dyn Error + Sync + Send + 'static>>
     {
-        let Some((untyped_byte_converter_registration, apply)) = self.untyped_byte_converter_registration_per_type_id.get(&type_id) else {
+        let Some((untyped_byte_converter_registration, apply)) = self.untyped_byte_converter_registration_per_type_name.get(&type_name) else {
             return Err("TypeId not registered to any ByteConverter.".into());
         };
         let output = apply(untyped_byte_converter_registration, context)?;
@@ -271,8 +372,9 @@ where
         Ok(())
     }
     #[inline(always)]
-    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
-        let mut cursor = Cursor::new(&bytes[*index..]);
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        let bytes_ref = bytes.as_ref();
+        let mut cursor = Cursor::new(&bytes_ref[*index..]);
         let output: TByteConverter = bincode::options().deserialize_from(&mut cursor)?;
         *index += cursor.position() as usize;
         Ok(Self(output))

@@ -11,7 +11,7 @@ impl ByteConverter for ChaCha8Rng {
         Ok(())
     }
     #[inline(always)]
-    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
         let seed: [u8; 32] = get_multiple_bytes(bytes, index, 32)?.try_into()?;
         Ok(Self::from_seed(seed))
     }
@@ -25,7 +25,7 @@ impl ByteConverter for ChaCha12Rng {
         Ok(())
     }
     #[inline(always)]
-    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
         let seed: [u8; 32] = get_multiple_bytes(bytes, index, 32)?.try_into()?;
         Ok(Self::from_seed(seed))
     }
@@ -39,7 +39,7 @@ impl ByteConverter for ChaCha20Rng {
         Ok(())
     }
     #[inline(always)]
-    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
         let seed: [u8; 32] = get_multiple_bytes(bytes, index, 32)?.try_into()?;
         Ok(Self::from_seed(seed))
     }

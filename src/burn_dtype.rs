@@ -68,7 +68,7 @@ impl ByteConverter for DType {
         Ok(())
     }
     #[inline(always)]
-    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
         let enum_variant_byte = u8::extract_from_bytes(bytes, index)?;
         match enum_variant_byte {
             0u8 => {

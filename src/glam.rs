@@ -11,7 +11,7 @@ impl ByteConverter for Quat {
         Ok(())
     }
     #[inline(always)]
-    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
         Ok(Self::from_xyzw(
             f32::extract_from_bytes(bytes, index)?,
             f32::extract_from_bytes(bytes, index)?,
@@ -30,7 +30,7 @@ impl ByteConverter for Vec3 {
         Ok(())
     }
     #[inline(always)]
-    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
         Ok(Self::new(
             f32::extract_from_bytes(bytes, index)?,
             f32::extract_from_bytes(bytes, index)?,
@@ -47,7 +47,7 @@ impl ByteConverter for Vec2 {
         Ok(())
     }
     #[inline(always)]
-    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
         Ok(Self::new(
             f32::extract_from_bytes(bytes, index)?,
             f32::extract_from_bytes(bytes, index)?,
@@ -63,7 +63,7 @@ impl ByteConverter for Mat2 {
         Ok(())
     }
     #[inline(always)]
-    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
         Ok(Self::from_cols(
             Vec2::extract_from_bytes(bytes, index)?,
             Vec2::extract_from_bytes(bytes, index)?,
@@ -80,7 +80,7 @@ impl ByteConverter for Mat3 {
         Ok(())
     }
     #[inline(always)]
-    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
         Ok(Self::from_cols(
             Vec3::extract_from_bytes(bytes, index)?,
             Vec3::extract_from_bytes(bytes, index)?,
@@ -97,7 +97,7 @@ impl ByteConverter for Affine2 {
         Ok(())
     }
     #[inline(always)]
-    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
         Ok(Self {
             matrix2: Mat2::extract_from_bytes(bytes, index)?,
             translation: Vec2::extract_from_bytes(bytes, index)?,
@@ -113,7 +113,7 @@ impl ByteConverter for BVec2 {
         Ok(())
     }
     #[inline(always)]
-    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
         Ok(Self {
             x: bool::extract_from_bytes(bytes, index)?,
             y: bool::extract_from_bytes(bytes, index)?,
@@ -130,7 +130,7 @@ impl ByteConverter for BVec3 {
         Ok(())
     }
     #[inline(always)]
-    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
         Ok(Self {
             x: bool::extract_from_bytes(bytes, index)?,
             y: bool::extract_from_bytes(bytes, index)?,
@@ -152,7 +152,7 @@ impl ByteConverter for BVec3A {
         Ok(())
     }
     #[inline(always)]
-    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
         Ok(Self::new(
             bool::extract_from_bytes(bytes, index)?,
             bool::extract_from_bytes(bytes, index)?,
@@ -171,7 +171,7 @@ impl ByteConverter for BVec4 {
         Ok(())
     }
     #[inline(always)]
-    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
         Ok(Self {
             x: bool::extract_from_bytes(bytes, index)?,
             y: bool::extract_from_bytes(bytes, index)?,
@@ -189,7 +189,7 @@ impl ByteConverter for DVec2 {
         Ok(())
     }
     #[inline(always)]
-    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
         Ok(Self {
             x: f64::extract_from_bytes(bytes, index)?,
             y: f64::extract_from_bytes(bytes, index)?,
@@ -205,7 +205,7 @@ impl ByteConverter for DMat2 {
         Ok(())
     }
     #[inline(always)]
-    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
         Ok(Self {
             x_axis: DVec2::extract_from_bytes(bytes, index)?,
             y_axis: DVec2::extract_from_bytes(bytes, index)?,
@@ -221,7 +221,7 @@ impl ByteConverter for DAffine2 {
         Ok(())
     }
     #[inline(always)]
-    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
         Ok(Self {
             matrix2: DMat2::extract_from_bytes(bytes, index)?,
             translation: DVec2::extract_from_bytes(bytes, index)?,
@@ -238,7 +238,7 @@ impl ByteConverter for DVec3 {
         Ok(())
     }
     #[inline(always)]
-    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
         Ok(Self {
             x: f64::extract_from_bytes(bytes, index)?,
             y: f64::extract_from_bytes(bytes, index)?,
@@ -255,7 +255,7 @@ impl ByteConverter for DMat3 {
         Ok(())
     }
     #[inline(always)]
-    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
         Ok(Self {
             x_axis: DVec3::extract_from_bytes(bytes, index)?,
             y_axis: DVec3::extract_from_bytes(bytes, index)?,
@@ -272,7 +272,7 @@ impl ByteConverter for DAffine3 {
         Ok(())
     }
     #[inline(always)]
-    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
         Ok(Self {
             matrix3: DMat3::extract_from_bytes(bytes, index)?,
             translation: DVec3::extract_from_bytes(bytes, index)?,
@@ -290,7 +290,7 @@ impl ByteConverter for DVec4 {
         Ok(())
     }
     #[inline(always)]
-    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
         Ok(Self {
             x: f64::extract_from_bytes(bytes, index)?,
             y: f64::extract_from_bytes(bytes, index)?,
@@ -310,7 +310,7 @@ impl ByteConverter for DMat4 {
         Ok(())
     }
     #[inline(always)]
-    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
         Ok(Self {
             x_axis: DVec4::extract_from_bytes(bytes, index)?,
             y_axis: DVec4::extract_from_bytes(bytes, index)?,
@@ -330,7 +330,7 @@ impl ByteConverter for DQuat {
         Ok(())
     }
     #[inline(always)]
-    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
         Ok(Self {
             x: f64::extract_from_bytes(bytes, index)?,
             y: f64::extract_from_bytes(bytes, index)?,
@@ -348,7 +348,7 @@ impl ByteConverter for I16Vec2 {
         Ok(())
     }
     #[inline(always)]
-    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
         Ok(Self {
             x: i16::extract_from_bytes(bytes, index)?,
             y: i16::extract_from_bytes(bytes, index)?,
@@ -365,7 +365,7 @@ impl ByteConverter for I16Vec3 {
         Ok(())
     }
     #[inline(always)]
-    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
         Ok(Self {
             x: i16::extract_from_bytes(bytes, index)?,
             y: i16::extract_from_bytes(bytes, index)?,
@@ -384,7 +384,7 @@ impl ByteConverter for I16Vec4 {
         Ok(())
     }
     #[inline(always)]
-    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
         Ok(Self {
             x: i16::extract_from_bytes(bytes, index)?,
             y: i16::extract_from_bytes(bytes, index)?,
@@ -402,7 +402,7 @@ impl ByteConverter for I64Vec2 {
         Ok(())
     }
     #[inline(always)]
-    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
         Ok(Self {
             x: i64::extract_from_bytes(bytes, index)?,
             y: i64::extract_from_bytes(bytes, index)?,
@@ -419,7 +419,7 @@ impl ByteConverter for I64Vec3 {
         Ok(())
     }
     #[inline(always)]
-    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
         Ok(Self {
             x: i64::extract_from_bytes(bytes, index)?,
             y: i64::extract_from_bytes(bytes, index)?,
@@ -438,7 +438,7 @@ impl ByteConverter for I64Vec4 {
         Ok(())
     }
     #[inline(always)]
-    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
         Ok(Self {
             x: i64::extract_from_bytes(bytes, index)?,
             y: i64::extract_from_bytes(bytes, index)?,
@@ -456,7 +456,7 @@ impl ByteConverter for I8Vec2 {
         Ok(())
     }
     #[inline(always)]
-    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
         Ok(Self {
             x: i8::extract_from_bytes(bytes, index)?,
             y: i8::extract_from_bytes(bytes, index)?,
@@ -473,7 +473,7 @@ impl ByteConverter for I8Vec3 {
         Ok(())
     }
     #[inline(always)]
-    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
         Ok(Self {
             x: i8::extract_from_bytes(bytes, index)?,
             y: i8::extract_from_bytes(bytes, index)?,
@@ -492,7 +492,7 @@ impl ByteConverter for I8Vec4 {
         Ok(())
     }
     #[inline(always)]
-    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
         Ok(Self {
             x: i8::extract_from_bytes(bytes, index)?,
             y: i8::extract_from_bytes(bytes, index)?,
@@ -510,7 +510,7 @@ impl ByteConverter for IVec2 {
         Ok(())
     }
     #[inline(always)]
-    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
         Ok(Self {
             x: i32::extract_from_bytes(bytes, index)?,
             y: i32::extract_from_bytes(bytes, index)?,
@@ -527,7 +527,7 @@ impl ByteConverter for IVec3 {
         Ok(())
     }
     #[inline(always)]
-    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
         Ok(Self {
             x: i32::extract_from_bytes(bytes, index)?,
             y: i32::extract_from_bytes(bytes, index)?,
@@ -546,7 +546,7 @@ impl ByteConverter for IVec4 {
         Ok(())
     }
     #[inline(always)]
-    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
         Ok(Self {
             x: i32::extract_from_bytes(bytes, index)?,
             y: i32::extract_from_bytes(bytes, index)?,
@@ -565,7 +565,7 @@ impl ByteConverter for Vec3A {
         Ok(())
     }
     #[inline(always)]
-    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
         Ok(Self::new(
             f32::extract_from_bytes(bytes, index)?,
             f32::extract_from_bytes(bytes, index)?,
@@ -583,7 +583,7 @@ impl ByteConverter for Mat3A {
         Ok(())
     }
     #[inline(always)]
-    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
         Ok(Self {
             x_axis: Vec3A::extract_from_bytes(bytes, index)?,
             y_axis: Vec3A::extract_from_bytes(bytes, index)?,
@@ -602,7 +602,7 @@ impl ByteConverter for Vec4 {
         Ok(())
     }
     #[inline(always)]
-    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
         Ok(Self::new(
             f32::extract_from_bytes(bytes, index)?,
             f32::extract_from_bytes(bytes, index)?,
@@ -622,7 +622,7 @@ impl ByteConverter for Mat4 {
         Ok(())
     }
     #[inline(always)]
-    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
         Ok(Self {
             x_axis: Vec4::extract_from_bytes(bytes, index)?,
             y_axis: Vec4::extract_from_bytes(bytes, index)?,
@@ -640,7 +640,7 @@ impl ByteConverter for U16Vec2 {
         Ok(())
     }
     #[inline(always)]
-    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
         Ok(Self {
             x: u16::extract_from_bytes(bytes, index)?,
             y: u16::extract_from_bytes(bytes, index)?,
@@ -657,7 +657,7 @@ impl ByteConverter for U16Vec3 {
         Ok(())
     }
     #[inline(always)]
-    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
         Ok(Self {
             x: u16::extract_from_bytes(bytes, index)?,
             y: u16::extract_from_bytes(bytes, index)?,
@@ -676,7 +676,7 @@ impl ByteConverter for U16Vec4 {
         Ok(())
     }
     #[inline(always)]
-    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
         Ok(Self {
             x: u16::extract_from_bytes(bytes, index)?,
             y: u16::extract_from_bytes(bytes, index)?,
@@ -694,7 +694,7 @@ impl ByteConverter for U64Vec2 {
         Ok(())
     }
     #[inline(always)]
-    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
         Ok(Self {
             x: u64::extract_from_bytes(bytes, index)?,
             y: u64::extract_from_bytes(bytes, index)?,
@@ -711,7 +711,7 @@ impl ByteConverter for U64Vec3 {
         Ok(())
     }
     #[inline(always)]
-    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
         Ok(Self {
             x: u64::extract_from_bytes(bytes, index)?,
             y: u64::extract_from_bytes(bytes, index)?,
@@ -730,7 +730,7 @@ impl ByteConverter for U64Vec4 {
         Ok(())
     }
     #[inline(always)]
-    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
         Ok(Self {
             x: u64::extract_from_bytes(bytes, index)?,
             y: u64::extract_from_bytes(bytes, index)?,
@@ -748,7 +748,7 @@ impl ByteConverter for U8Vec2 {
         Ok(())
     }
     #[inline(always)]
-    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
         Ok(Self {
             x: u8::extract_from_bytes(bytes, index)?,
             y: u8::extract_from_bytes(bytes, index)?,
@@ -765,7 +765,7 @@ impl ByteConverter for U8Vec3 {
         Ok(())
     }
     #[inline(always)]
-    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
         Ok(Self {
             x: u8::extract_from_bytes(bytes, index)?,
             y: u8::extract_from_bytes(bytes, index)?,
@@ -784,7 +784,7 @@ impl ByteConverter for U8Vec4 {
         Ok(())
     }
     #[inline(always)]
-    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
         Ok(Self {
             x: u8::extract_from_bytes(bytes, index)?,
             y: u8::extract_from_bytes(bytes, index)?,
@@ -802,7 +802,7 @@ impl ByteConverter for UVec2 {
         Ok(())
     }
     #[inline(always)]
-    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
         Ok(Self {
             x: u32::extract_from_bytes(bytes, index)?,
             y: u32::extract_from_bytes(bytes, index)?,
@@ -819,7 +819,7 @@ impl ByteConverter for UVec3 {
         Ok(())
     }
     #[inline(always)]
-    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
         Ok(Self {
             x: u32::extract_from_bytes(bytes, index)?,
             y: u32::extract_from_bytes(bytes, index)?,
@@ -838,7 +838,7 @@ impl ByteConverter for UVec4 {
         Ok(())
     }
     #[inline(always)]
-    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
         Ok(Self {
             x: u32::extract_from_bytes(bytes, index)?,
             y: u32::extract_from_bytes(bytes, index)?,

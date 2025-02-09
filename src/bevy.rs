@@ -208,7 +208,7 @@ impl ByteConverter for KeyCode {
         Ok(())
     }
     #[inline(always)]
-    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
         let enum_variant_byte = u8::extract_from_bytes(bytes, index)?;
         match enum_variant_byte {
             0u8 => Ok(Self::Abort),
@@ -436,7 +436,7 @@ impl ByteConverter for NativeKeyCode {
         Ok(())
     }
     #[inline(always)]
-    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
         let enum_variant_byte = u8::extract_from_bytes(bytes, index)?;
         match enum_variant_byte {
             0u8 => {
@@ -478,7 +478,7 @@ impl ByteConverter for MouseButton {
         Ok(())
     }
     #[inline(always)]
-    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
         let enum_variant_byte = u8::extract_from_bytes(bytes, index)?;
         match enum_variant_byte {
             0u8 => Ok(Self::Back),
@@ -502,7 +502,7 @@ impl ByteConverter for MouseScrollUnit {
         Ok(())
     }
     #[inline(always)]
-    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
         let enum_variant_byte = u8::extract_from_bytes(bytes, index)?;
         match enum_variant_byte {
             0u8 => Ok(Self::Line),
@@ -519,7 +519,7 @@ impl ByteConverter for Entity {
         Ok(())
     }
     #[inline(always)]
-    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
         Ok(Self::from_bits(u64::extract_from_bytes(bytes, index)?))
     }
 }
@@ -533,7 +533,7 @@ impl ByteConverter for Transform {
         Ok(())
     }
     #[inline(always)]
-    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
         let mut instance = Self::default();
         instance.rotation = Quat::extract_from_bytes(bytes, index)?;
         instance.scale = Vec3::extract_from_bytes(bytes, index)?;
@@ -549,7 +549,7 @@ impl ByteConverter for Text {
         Ok(())
     }
     #[inline(always)]
-    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
         Ok(Self::new(String::extract_from_bytes(bytes, index)?))
     }
 }
@@ -561,7 +561,7 @@ impl ByteConverter for Text2d {
         Ok(())
     }
     #[inline(always)]
-    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
         Ok(Self::new(String::extract_from_bytes(bytes, index)?))
     }
 }
@@ -644,7 +644,7 @@ impl ByteConverter for Color {
         Ok(())
     }
     #[inline(always)]
-    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
         let enum_variant_byte = u8::extract_from_bytes(bytes, index)?;
         match enum_variant_byte {
             0u8 => Ok(Self::Srgba(Srgba {
@@ -719,7 +719,7 @@ impl ByteConverter for TextColor {
         Ok(())
     }
     #[inline(always)]
-    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
         Ok(Self(Color::extract_from_bytes(bytes, index)?))
     }
 }
@@ -732,7 +732,7 @@ impl ByteConverter for Affine3 {
         Ok(())
     }
     #[inline(always)]
-    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
         Ok(Self {
             matrix3: Mat3::extract_from_bytes(bytes, index)?,
             translation: Vec3::extract_from_bytes(bytes, index)?,

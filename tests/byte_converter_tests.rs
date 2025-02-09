@@ -2,7 +2,7 @@
 mod byte_converter_tests {
     use std::{collections::HashMap, error::Error, ffi::CString, io::Cursor, path::PathBuf, sync::Mutex};
     use bevy::{input::{keyboard::NativeKeyCode, mouse::MouseScrollUnit}, prelude::{Entity, KeyCode, MouseButton}};
-    use bytecon::{ByteConverter, ByteConverterFactory, ByteStreamReader, ByteStreamWriter};
+    use bytecon::{ByteConverter, DeserializationByteConverterFactory, ByteStreamReader, ByteStreamWriter};
     use rand::{Rng, SeedableRng};
     use rand_chacha::{ChaCha20Rng, ChaCha8Rng};
 
@@ -96,7 +96,7 @@ mod byte_converter_tests {
             Ok(())
         }
         #[inline(always)]
-        fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
             let enum_variant_byte = u8::extract_from_bytes(bytes, index)?;
             match enum_variant_byte {
                 0u8 => Ok(Self::A(
@@ -255,7 +255,7 @@ mod byte_converter_tests {
             Ok(())
         }
         #[inline(always)]
-        fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
             Ok(Self {
                 a: i8::extract_from_bytes(bytes, index)?,
                 b: i16::extract_from_bytes(bytes, index)?,
@@ -666,18 +666,18 @@ mod byte_converter_tests {
             Ok(output)
         }
 
-        let mut factory = ByteConverterFactory::default();
+        let mut factory = DeserializationByteConverterFactory::default();
         factory.register::<u8>(extract_byte_converter_from_context_u8, apply_u8);
 
         let test_value = 123u8;
-        let type_id = std::any::TypeId::of::<u8>();
+        let type_name = std::any::type_name::<u8>();
         let mut extract_context = TestContext {
             previous: Mutex::new(None),
             test_value_bytes: test_value.to_vec_bytes().unwrap(),
         };
 
         // you start with a Box<dyn Any> because we don't know the T
-        let output = factory.apply(&mut extract_context, type_id).unwrap();
+        let output = factory.deserialize(&mut extract_context, type_name).unwrap();
 
         // downstream we can downcast when we know what T is
         assert_eq!(None, output);
@@ -738,11 +738,11 @@ mod byte_converter_tests {
             Ok(output)
         }
 
-        let mut factory = ByteConverterFactory::default();
+        let mut factory = DeserializationByteConverterFactory::default();
         factory.register::<u8>(extract_byte_converter_from_context_u8, apply_u8);
 
         let test_value = 123u8;
-        let type_id = std::any::TypeId::of::<u8>();
+        let type_name = std::any::type_name::<u8>();
         let previous: Option<u8> = None;
 
         let mut context = TestContext {
@@ -751,7 +751,7 @@ mod byte_converter_tests {
         };
 
         // you start with a Box<dyn Any> because we don't know the T
-        let output = factory.apply(&mut context, type_id).unwrap();
+        let output = factory.deserialize(&mut context, type_name).unwrap();
 
         // downstream we can downcast when we know what T is
         assert_eq!(None, output);
