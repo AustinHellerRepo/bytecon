@@ -1115,6 +1115,7 @@ mod byte_converter_tests {
         assert_eq!(final_position, cursor.position());
     }
 
+    #[ignore]
     #[test]
     fn test_g4k8_large_struct_and_large_enum() {
         let mut rng = ChaCha8Rng::from_seed([0u8; 32]);

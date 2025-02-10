@@ -3,11 +3,11 @@ mod bevy_tests {
     use std::error::Error;
 
     use bevy::{ecs::{component::Component, entity::Entity, world::World}, transform::components::Transform};
-    use bytecon::{ByteConverter, SerializationByteConverterFactory};
+    use bytecon::{ByteConverter, Context, SerializationByteConverterFactory};
 
     #[cfg(feature = "bevy")]
     #[test]
-    fn bevy_deserialize_entity() {
+    fn test_y7v9_bevy_deserialize_entity() {
         use std::error::Error;
 
         use bevy::{ecs::{component::Component, system::Commands, world::{CommandQueue, World}}, transform::components::Transform};
@@ -63,50 +63,33 @@ mod bevy_tests {
     }
 
     #[test]
-    fn bevy_serialize_entity() {
+    fn test_o2s9_bevy_serialize_entity() {
 
         struct ByteConverterFactoryContext<'a> {
             world: &'a mut World,
             entity: Entity,
         }
 
+        impl<'a> Context for ByteConverterFactoryContext<'a> {
+
+        }
+
         let mut world = World::default();
         world.register_component::<Transform>();
 
-        fn extract_bytes_from_context<TByteConverter>(context: &mut ByteConverterFactoryContext, type_name: &str) -> Result<Vec<u8>, Box<dyn Error + Send + Sync + 'static>>
+        fn extract_bytes_from_context<TByteConverter>(context: &mut ByteConverterFactoryContext) -> Result<Vec<u8>, Box<dyn Error + Send + Sync + 'static>>
         where
             TByteConverter: ByteConverter + Component,
         {
-            let type_name_and_component_id_tuples = context.world.inspect_entity(context.entity)
-                .map(|component_info| {
-                    (component_info.type_id(), component_info.name(), component_info.id())
-                })
-                .filter(|(type_id_option, _, _)| {
-                    type_id_option.is_some()
-                })
-                .map(|(_, type_name, component_id)| {
-                    (type_name, component_id)
-                })
-                .collect::<Vec<_>>();
-            for (component_type_name, component_id) in type_name_and_component_id_tuples {
-                if component_type_name == type_name {
-                    if let Ok(entity_ref) = context.world
-                        .get_entity(context.entity) {
-
-                        let ptr = entity_ref.get_by_id(component_id)
-                            .unwrap()
-                            .as_ptr() as *const TByteConverter;
-                        let component_ref = unsafe { &*ptr };
-                        return component_ref.to_vec_bytes();
-                    }
-                }
+            if let Some(component) = context.world.get::<TByteConverter>(context.entity) {
+                return component.to_vec_bytes();
             }
             Err("Failed to find component on entity.".into())
         }
 
-        let mut byte_converter_factory = SerializationByteConverterFactory::<ByteConverterFactoryContext>::default();
+        let mut byte_converter_factory = SerializationByteConverterFactory::default();
         byte_converter_factory
-            .register::<Transform>(extract_bytes_from_context::<Transform>);
+            .register::<Transform, ByteConverterFactoryContext>(extract_bytes_from_context::<Transform>);
 
         let transform = Transform::from_xyz(1.0, 2.0, 3.0);
         let expected_bytes = transform.to_vec_bytes().unwrap();
