@@ -7,15 +7,19 @@ mod bevy_tests {
 
     #[cfg(feature = "bevy")]
     #[test]
-    fn bevy_serialize_entity() {
+    fn bevy_deserialize_entity() {
         use std::error::Error;
 
         use bevy::{ecs::{component::Component, system::Commands, world::{CommandQueue, World}}, transform::components::Transform};
-        use bytecon::{ByteConverter, DeserializationByteConverterFactory};
+        use bytecon::{ByteConverter, Context, DeserializationByteConverterFactory};
 
         struct ByteConverterFactoryContext<'w, 's, 'a> {
             commands: &'a mut Commands<'w, 's>,
             component_bytes: Vec<u8>,
+        }
+
+        impl<'w, 's, 'a> Context for ByteConverterFactoryContext<'w, 's, 'a> {
+
         }
 
         let mut queue = CommandQueue::default();
@@ -43,9 +47,9 @@ mod bevy_tests {
             Ok(true)
         }
 
-        let mut byte_converter_factory = DeserializationByteConverterFactory::<ByteConverterFactoryContext, bool>::default();
+        let mut byte_converter_factory = DeserializationByteConverterFactory::<bool>::default();
         byte_converter_factory
-            .register::<Transform>(extract_byte_converter_from_context, apply_component);
+            .register::<Transform, ByteConverterFactoryContext>(extract_byte_converter_from_context, apply_component);
 
         let transform = Transform::from_xyz(1.0, 2.0, 3.0);
 
@@ -59,7 +63,7 @@ mod bevy_tests {
     }
 
     #[test]
-    fn bevy_deserialize_entity() {
+    fn bevy_serialize_entity() {
 
         struct ByteConverterFactoryContext<'a> {
             world: &'a mut World,

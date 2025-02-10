@@ -2,7 +2,7 @@
 mod byte_converter_tests {
     use std::{collections::HashMap, error::Error, ffi::CString, io::Cursor, path::PathBuf, sync::Mutex};
     use bevy::{input::{keyboard::NativeKeyCode, mouse::MouseScrollUnit}, prelude::{Entity, KeyCode, MouseButton}};
-    use bytecon::{ByteConverter, DeserializationByteConverterFactory, ByteStreamReader, ByteStreamWriter};
+    use bytecon::{ByteConverter, ByteStreamReader, ByteStreamWriter, Context, DeserializationByteConverterFactory};
     use rand::{Rng, SeedableRng};
     use rand_chacha::{ChaCha20Rng, ChaCha8Rng};
 
@@ -648,6 +648,10 @@ mod byte_converter_tests {
             test_value_bytes: Vec<u8>,
         }
 
+        impl Context for TestContext {
+
+        }
+
         fn extract_byte_converter_from_context_u8<TByteConverter>(context: &mut TestContext) -> Result<TByteConverter, Box<dyn Error + Send + Sync + 'static>>
         where
             TByteConverter: ByteConverter,
@@ -667,7 +671,7 @@ mod byte_converter_tests {
         }
 
         let mut factory = DeserializationByteConverterFactory::default();
-        factory.register::<u8>(extract_byte_converter_from_context_u8, apply_u8);
+        factory.register::<u8, TestContext>(extract_byte_converter_from_context_u8, apply_u8);
 
         let test_value = 123u8;
         let type_name = std::any::type_name::<u8>();
@@ -721,6 +725,10 @@ mod byte_converter_tests {
             test_value_bytes: Vec<u8>,
         }
 
+        impl Context for TestContext {
+
+        }
+
         fn extract_byte_converter_from_context_u8<TByteConverter>(context: &mut TestContext) -> Result<TByteConverter, Box<dyn Error + Send + Sync + 'static>>
         where
             TByteConverter: ByteConverter,
@@ -739,7 +747,7 @@ mod byte_converter_tests {
         }
 
         let mut factory = DeserializationByteConverterFactory::default();
-        factory.register::<u8>(extract_byte_converter_from_context_u8, apply_u8);
+        factory.register::<u8, TestContext>(extract_byte_converter_from_context_u8, apply_u8);
 
         let test_value = 123u8;
         let type_name = std::any::type_name::<u8>();
