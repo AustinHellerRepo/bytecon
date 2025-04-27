@@ -164,15 +164,14 @@ impl TypedSerializationByteConverterRegistration {
 }
 
 struct TypedDeserializationByteConverterRegistration<TOutput, TByteConverter> {
-    extract_byte_converter_from_context_function: fn(&mut dyn Context) -> Result<TByteConverter, Box<dyn Error + Send + Sync + 'static>>,
-    apply_function: fn(&mut dyn Context, TByteConverter) -> Result<TOutput, Box<dyn Error + Send + Sync + 'static>>,
+    apply_function: fn(&mut dyn Context) -> Result<TOutput, Box<dyn Error + Send + Sync + 'static>>,
+    byte_converter_phantom_data: PhantomData<TByteConverter>,
 }
 
 impl<TOutput, TByteConverter> TypedDeserializationByteConverterRegistration<TOutput, TByteConverter> {
     #[inline(always)]
     fn extract_byte_converter_from_context_and_apply(&self, context: &mut dyn Context) -> Result<TOutput, Box<dyn Error + Send + Sync + 'static>> {
-        let byte_converter: TByteConverter = (self.extract_byte_converter_from_context_function)(context)?;
-        (self.apply_function)(context, byte_converter)
+        (self.apply_function)(context)
     }
 }
 
@@ -207,15 +206,13 @@ impl UntypedSerializationByteConverterRegistration {
 
 struct UntypedDeserializationByteConverterRegistration<TOutput> {
     type_name: &'static str,
-    extract_byte_converter_from_context_function: unsafe fn(),
     apply_function: unsafe fn(),
     phantom_output: std::marker::PhantomData<TOutput>,
 }
 
 impl<TOutput> UntypedDeserializationByteConverterRegistration<TOutput> {
     pub fn new<TByteConverter, TContext>(
-        extract_byte_converter_from_context_function: fn(&mut TContext) -> Result<TByteConverter, Box<dyn Error + Send + Sync + 'static>>,
-        apply_function: fn(&mut TContext, TByteConverter) -> Result<TOutput, Box<dyn Error + Send + Sync + 'static>>,
+        apply_function: fn(&mut TContext) -> Result<TOutput, Box<dyn Error + Send + Sync + 'static>>,
     ) -> Self
     where
         TByteConverter: ByteConverter + Any,
@@ -223,16 +220,15 @@ impl<TOutput> UntypedDeserializationByteConverterRegistration<TOutput> {
     {
         Self {
             type_name: std::any::type_name::<TByteConverter>(),
-            extract_byte_converter_from_context_function: unsafe { std::mem::transmute::<fn(&mut TContext) -> Result<TByteConverter, Box<dyn Error + Send + Sync + 'static>>, unsafe fn()>(extract_byte_converter_from_context_function) },
-            apply_function: unsafe { std::mem::transmute::<fn(&mut TContext, TByteConverter) -> Result<TOutput, Box<dyn Error + Send + Sync + 'static>>, unsafe fn()>(apply_function) },
+            apply_function: unsafe { std::mem::transmute::<fn(&mut TContext) -> Result<TOutput, Box<dyn Error + Send + Sync + 'static>>, unsafe fn()>(apply_function) },
             phantom_output: PhantomData::default(),
         }
     }
     #[inline(always)]
     fn cast<TByteConverter>(&self) -> TypedDeserializationByteConverterRegistration<TOutput, TByteConverter> {
         TypedDeserializationByteConverterRegistration::<TOutput, TByteConverter> {
-            extract_byte_converter_from_context_function: unsafe { std::mem::transmute::<unsafe fn(), fn(&mut dyn Context) -> Result<TByteConverter, Box<dyn Error + Send + Sync + 'static>>>(self.extract_byte_converter_from_context_function) },
-            apply_function: unsafe { std::mem::transmute::<unsafe fn(), fn(&mut dyn Context, TByteConverter) -> Result<TOutput, Box<dyn Error + Send + Sync + 'static>>>(self.apply_function) },
+            apply_function: unsafe { std::mem::transmute::<unsafe fn(), fn(&mut dyn Context) -> Result<TOutput, Box<dyn Error + Send + Sync + 'static>>>(self.apply_function) },
+            byte_converter_phantom_data: PhantomData::default(),
         }
     }
 }
@@ -330,14 +326,13 @@ impl<TOutput> DeserializationByteConverterFactory<TOutput>
 {
     pub fn register<TByteConverter, TContext>(
         &mut self,
-        extract_byte_converter_from_context_function: fn(&mut TContext) -> Result<TByteConverter, Box<dyn Error + Send + Sync + 'static>>,
-        apply_function: fn(&mut TContext, TByteConverter) -> Result<TOutput, Box<dyn Error + Send + Sync + 'static>>,
+        apply_function: fn(&mut TContext) -> Result<TOutput, Box<dyn Error + Send + Sync + 'static>>,
     ) -> &mut Self
     where
         TByteConverter: ByteConverter + 'static,
         TContext: Context,
     {
-        let untyped_byte_converter_registration = UntypedDeserializationByteConverterRegistration::new::<TByteConverter, TContext>(extract_byte_converter_from_context_function, apply_function);
+        let untyped_byte_converter_registration = UntypedDeserializationByteConverterRegistration::new::<TByteConverter, TContext>(apply_function);
         self.untyped_byte_converter_registration_per_type_name.insert(
             untyped_byte_converter_registration.type_name,
             (

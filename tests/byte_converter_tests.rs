@@ -652,18 +652,11 @@ mod byte_converter_tests {
 
         }
 
-        fn extract_byte_converter_from_context_u8<TByteConverter>(context: &mut TestContext) -> Result<TByteConverter, Box<dyn Error + Send + Sync + 'static>>
+        fn apply_u8<TByteConverter>(context: &mut TestContext) -> Result<Option<u8>, Box<dyn std::error::Error + Send + Sync + 'static>>
         where
             TByteConverter: ByteConverter,
         {
             let byte_converter = TByteConverter::deserialize_from_bytes(&context.test_value_bytes)?;
-            Ok(byte_converter)
-        }
-
-        fn apply_u8<TByteConverter>(context: &mut TestContext, byte_converter: TByteConverter) -> Result<Option<u8>, Box<dyn std::error::Error + Send + Sync + 'static>>
-        where
-            TByteConverter: ByteConverter,
-        {
             let output = *context.previous.lock().unwrap();
             let current = byte_converter.cast_via_bytes::<u8>()?;
             *context.previous.lock().unwrap() = Some(current);
@@ -671,7 +664,7 @@ mod byte_converter_tests {
         }
 
         let mut factory = DeserializationByteConverterFactory::default();
-        factory.register::<u8, TestContext>(extract_byte_converter_from_context_u8, apply_u8);
+        factory.register::<u8, TestContext>(apply_u8::<u8>);
 
         let test_value = 123u8;
         let type_name = std::any::type_name::<u8>();
@@ -729,25 +722,18 @@ mod byte_converter_tests {
 
         }
 
-        fn extract_byte_converter_from_context_u8<TByteConverter>(context: &mut TestContext) -> Result<TByteConverter, Box<dyn Error + Send + Sync + 'static>>
-        where
-            TByteConverter: ByteConverter,
-        {
-            let byte_converter = TByteConverter::deserialize_from_bytes(&context.test_value_bytes)?;
-            Ok(byte_converter)
-        }
-
-        fn apply_u8<TByteConverter>(context: &mut TestContext, byte_converter: TByteConverter) -> Result<Option<u8>, Box<dyn std::error::Error + Send + Sync + 'static>>
+        fn apply_u8<TByteConverter>(context: &mut TestContext) -> Result<Option<u8>, Box<dyn std::error::Error + Send + Sync + 'static>>
         where
             TByteConverter: ByteConverter + GetValue<TValue = u8>,
         {
+            let byte_converter = TByteConverter::deserialize_from_bytes(&context.test_value_bytes)?;
             let output = context.previous.clone();
             context.previous.consume_value(byte_converter);
             Ok(output)
         }
 
         let mut factory = DeserializationByteConverterFactory::default();
-        factory.register::<u8, TestContext>(extract_byte_converter_from_context_u8, apply_u8);
+        factory.register::<u8, TestContext>(apply_u8::<u8>);
 
         let test_value = 123u8;
         let type_name = std::any::type_name::<u8>();

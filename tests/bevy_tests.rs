@@ -37,10 +37,11 @@ mod bevy_tests {
             Ok(byte_converter)
         }
 
-        fn apply_component<TByteConverter>(context: &mut ByteConverterFactoryContext, byte_converter: TByteConverter) -> Result<bool, Box<dyn Error + Send + Sync + 'static>>
+        fn apply_component<TByteConverter>(context: &mut ByteConverterFactoryContext) -> Result<bool, Box<dyn Error + Send + Sync + 'static>>
         where
             TByteConverter: ByteConverter + Component,
         {
+            let byte_converter = TByteConverter::deserialize_from_bytes(&context.component_bytes)?;
             context.commands
                 .spawn_empty()
                 .insert(byte_converter);
@@ -49,7 +50,7 @@ mod bevy_tests {
 
         let mut byte_converter_factory = DeserializationByteConverterFactory::<bool>::default();
         byte_converter_factory
-            .register::<Transform, ByteConverterFactoryContext>(extract_byte_converter_from_context, apply_component);
+            .register::<Transform, ByteConverterFactoryContext>(apply_component::<Transform>);
 
         let transform = Transform::from_xyz(1.0, 2.0, 3.0);
 
@@ -138,27 +139,19 @@ mod bevy_tests {
         let mut world = World::default();
         //world.register_resource::<ReplicatedResource>();
 
-        fn extract_resource_byte_converter_from_context_function<TByteConverter>(context: &mut UpdateResourceByteConverterFactoryContext) -> Result<TByteConverter, Box<dyn Error + Send + Sync + 'static>>
-        where
-            TByteConverter: ByteConverter + Resource,
-        {
-            let resource = TByteConverter::deserialize_from_bytes(context.byte_converter_bytes)?;
-            Ok(resource)
-        }
-
         fn insert_resource_apply_function<TByteConverter>(
             context: &mut UpdateResourceByteConverterFactoryContext,
-            resource: TByteConverter,
         ) -> Result<(), Box<dyn Error + Send + Sync + 'static>>
         where
             TByteConverter: ByteConverter + Resource,
         {
+            let resource = TByteConverter::deserialize_from_bytes(context.byte_converter_bytes)?;
             context.world.insert_resource(resource);
             Ok(())
         }
 
         let mut byte_converter_factory: DeserializationByteConverterFactory<()> = DeserializationByteConverterFactory::default();
-        byte_converter_factory.register::<ReplicatedResource, UpdateResourceByteConverterFactoryContext>(extract_resource_byte_converter_from_context_function, insert_resource_apply_function);
+        byte_converter_factory.register::<ReplicatedResource, UpdateResourceByteConverterFactoryContext>(insert_resource_apply_function::<ReplicatedResource>);
 
         let expected_resource = ReplicatedResource {
             value: String::from("Hello world"),
