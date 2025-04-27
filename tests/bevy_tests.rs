@@ -2,8 +2,8 @@
 mod bevy_tests {
     use std::error::Error;
 
-    use bevy::{ecs::{component::Component, entity::Entity, world::World}, transform::components::Transform};
-    use bytecon::{ByteConverter, Context, SerializationByteConverterFactory};
+    use bevy::{ecs::{component::Component, entity::Entity, system::Resource, world::World}, transform::components::Transform};
+    use bytecon::{ByteConverter, Context, DeserializationByteConverterFactory, SerializationByteConverterFactory};
 
     #[cfg(feature = "bevy")]
     #[test]
@@ -107,5 +107,68 @@ mod bevy_tests {
         println!("looking for {}", type_name);
         let actual_bytes = byte_converter_factory.serialize(&mut context, type_name).unwrap();
         assert_eq!(expected_bytes, actual_bytes);
+    }
+
+    #[test]
+    fn test_z7v1_bevy_deserialize_resource() {
+        #[derive(Resource)]
+        struct ReplicatedResource {
+            value: String,
+        }
+
+        impl ByteConverter for ReplicatedResource {
+            fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
+                self.value.append_to_bytes(bytes)?;
+                Ok(())
+            }
+            fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+                Ok(Self {
+                    value: String::extract_from_bytes(bytes, index)?,
+                })
+            }
+        }
+
+        struct UpdateResourceByteConverterFactoryContext<'a> {
+            world: &'a mut World,
+            byte_converter_bytes: &'a Vec<u8>,
+        }
+
+        impl<'a> Context for UpdateResourceByteConverterFactoryContext<'a> {}
+
+        let mut world = World::default();
+        //world.register_resource::<ReplicatedResource>();
+
+        fn extract_resource_byte_converter_from_context_function<TByteConverter>(context: &mut UpdateResourceByteConverterFactoryContext) -> Result<TByteConverter, Box<dyn Error + Send + Sync + 'static>>
+        where
+            TByteConverter: ByteConverter + Resource,
+        {
+            let resource = TByteConverter::deserialize_from_bytes(context.byte_converter_bytes)?;
+            Ok(resource)
+        }
+
+        fn insert_resource_apply_function<TByteConverter>(
+            context: &mut UpdateResourceByteConverterFactoryContext,
+            resource: TByteConverter,
+        ) -> Result<(), Box<dyn Error + Send + Sync + 'static>>
+        where
+            TByteConverter: ByteConverter + Resource,
+        {
+            context.world.insert_resource(resource);
+            Ok(())
+        }
+
+        let mut byte_converter_factory: DeserializationByteConverterFactory<()> = DeserializationByteConverterFactory::default();
+        byte_converter_factory.register::<ReplicatedResource, UpdateResourceByteConverterFactoryContext>(extract_resource_byte_converter_from_context_function, insert_resource_apply_function);
+
+        let expected_resource = ReplicatedResource {
+            value: String::from("Hello world"),
+        };
+
+        let mut context = UpdateResourceByteConverterFactoryContext {
+            world: &mut world,
+            byte_converter_bytes: &expected_resource.to_vec_bytes().unwrap(),
+        };
+        let type_name = std::any::type_name::<ReplicatedResource>();
+        byte_converter_factory.deserialize(&mut context, type_name).unwrap();
     }
 }

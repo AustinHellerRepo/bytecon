@@ -107,7 +107,7 @@ impl ByteConverter for LargeEnum {
         Ok(())
     }
     #[inline(always)]
-    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
         let enum_variant_byte = u8::extract_from_bytes(bytes, index)?;
         match enum_variant_byte {
             0u8 => Ok(Self::A(
@@ -266,7 +266,7 @@ impl ByteConverter for LargeStruct {
         Ok(())
     }
     #[inline(always)]
-    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
         Ok(Self {
             a: i8::extract_from_bytes(bytes, index)?,
             b: i16::extract_from_bytes(bytes, index)?,
@@ -336,7 +336,7 @@ impl ByteConverter for TestStruct {
         Ok(())
     }
 
-    fn extract_from_bytes(bytes: &Vec<u8>, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
         let id = u64::extract_from_bytes(bytes, index)?;
         let name = String::extract_from_bytes(bytes, index)?;
         let values = Vec::<i32>::extract_from_bytes(bytes, index)?;

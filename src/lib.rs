@@ -171,7 +171,7 @@ struct TypedDeserializationByteConverterRegistration<TOutput, TByteConverter> {
 impl<TOutput, TByteConverter> TypedDeserializationByteConverterRegistration<TOutput, TByteConverter> {
     #[inline(always)]
     fn extract_byte_converter_from_context_and_apply(&self, context: &mut dyn Context) -> Result<TOutput, Box<dyn Error + Send + Sync + 'static>> {
-        let byte_converter = (self.extract_byte_converter_from_context_function)(context)?;
+        let byte_converter: TByteConverter = (self.extract_byte_converter_from_context_function)(context)?;
         (self.apply_function)(context, byte_converter)
     }
 }
