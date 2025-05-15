@@ -2,7 +2,7 @@
 mod bevy_tests {
     use std::error::Error;
 
-    use bevy::{ecs::{component::Component, entity::Entity, system::Resource, world::World}, transform::components::Transform};
+    use bevy::{ecs::{component::Component, entity::Entity, resource::Resource, world::World}, transform::components::Transform};
     use bytecon::{ByteConverter, Context, DeserializationByteConverterFactory, SerializationByteConverterFactory};
 
     #[cfg(feature = "bevy")]

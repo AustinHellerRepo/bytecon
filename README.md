@@ -30,6 +30,13 @@ Allows for the convenient conversion of types from and to arrays of bytes.
   * Contains implementations for the `bevy` crate, version 0.15
 * `"glam"`
   * Contains implementations for the `glam` crate
+
+## Supported Bevy Versions
+
+| Bevy    | ByteCon |
+| ------- | ------- |
+| 0.16    | 0.5     |
+| 0.15    | 0.4     |
  
 # Coming soon
 * Additional implementations for other common crates
