@@ -7,6 +7,9 @@ use serde::{de::DeserializeOwned, Serialize};
 //      this can be used to match on within the extract so that changes in format across versions of this crate are unaffected
 // TODO replace string errors with usage of ByteConverterError variants
 
+#[cfg(feature = "avian3d")]
+pub mod avian3d;
+
 #[cfg(feature = "base")]
 pub mod base;
 

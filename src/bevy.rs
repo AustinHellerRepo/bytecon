@@ -739,3 +739,28 @@ impl ByteConverter for Affine3 {
         })
     }
 }
+
+impl<TKey, TValue> ByteConverter for bevy::platform::collections::HashMap<TKey, TValue>
+where
+    TKey: ByteConverter + Eq + std::hash::Hash,
+    TValue: ByteConverter,
+{
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> std::result::Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        self.len().append_to_bytes(bytes)?;
+        for (key, value) in self.iter() {
+            key.append_to_bytes(bytes)?;
+            value.append_to_bytes(bytes)?;
+        }
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> std::result::Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        let mut hashmap = bevy::platform::collections::HashMap::new();
+        let keys_length = usize::extract_from_bytes(bytes, index)?;
+        for _ in 0..keys_length {
+            let key = TKey::extract_from_bytes(bytes, index)?;
+            let value = TValue::extract_from_bytes(bytes, index)?;
+            hashmap.insert(key, value);
+        }
+        Ok(hashmap)
+    }
+}
