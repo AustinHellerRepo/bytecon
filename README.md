@@ -30,13 +30,15 @@ Allows for the convenient conversion of types from and to arrays of bytes.
   * Contains implementations for the `bevy` crate, version 0.15
 * `"glam"`
   * Contains implementations for the `glam` crate
+* `"avian3d"`
+  * Contains implementations for the `avian3d` crate
 
 ## Supported Bevy Versions
 
-| Bevy    | ByteCon |
-| ------- | ------- |
-| 0.16    | 0.5     |
-| 0.15    | 0.4     |
+| ByteCon | Bevy    | Avian3d |
+| ------- | ------- | ------- |
+| 0.5     | 0.16    | 0.3     |
+| 0.4     | 0.15    |         |
  
 # Coming soon
 * Additional implementations for other common crates
