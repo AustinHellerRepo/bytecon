@@ -1,4 +1,4 @@
-use avian3d::{collision::collider::ColliderConstructorHierarchyConfig, prelude::*};
+use avian3d::{collision::collider::ColliderConstructorHierarchyConfig, math::Scalar, prelude::*};
 use bevy::ecs::entity::Entity;
 use glam::{Quat, Vec3};
 use crate::ByteConverter;
@@ -10,6 +10,30 @@ impl ByteConverter for AngularVelocity {
     }
     fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
         Ok(Self(Vec3::extract_from_bytes(bytes, index)?))
+    }
+}
+
+impl ByteConverter for CoefficientCombine {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
+        match self {
+            Self::Average => 0u8.append_to_bytes(bytes)?,
+            Self::GeometricMean => 1u8.append_to_bytes(bytes)?,
+            Self::Min => 2u8.append_to_bytes(bytes)?,
+            Self::Multiply => 3u8.append_to_bytes(bytes)?,
+            Self::Max => 4u8.append_to_bytes(bytes)?,
+        }
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
+        let enum_variant_byte = u8::extract_from_bytes(bytes, index)?;
+        match enum_variant_byte {
+            0u8 => Ok(Self::Average),
+            1u8 => Ok(Self::GeometricMean),
+            2u8 => Ok(Self::Min),
+            3u8 => Ok(Self::Multiply),
+            4u8 => Ok(Self::Max),
+            _ => Err("Unexpected enum variant byte.".into()),
+        }
     }
 }
 
@@ -182,6 +206,16 @@ impl ByteConverter for CollisionLayers {
     }
 }
 
+impl ByteConverter for CollisionMargin {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
+        self.0.append_to_bytes(bytes)?;
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
+        Ok(Self(Scalar::extract_from_bytes(bytes, index)?))
+    }
+}
+
 impl ByteConverter for CollisionStarted {
     fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
         self.0.append_to_bytes(bytes)?;
@@ -190,6 +224,26 @@ impl ByteConverter for CollisionStarted {
     }
     fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
         Ok(Self(Entity::extract_from_bytes(bytes, index)?, Entity::extract_from_bytes(bytes, index)?))
+    }
+}
+
+impl ByteConverter for DefaultFriction {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
+        self.0.append_to_bytes(bytes)?;
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
+        Ok(Self(Friction::extract_from_bytes(bytes, index)?))
+    }
+}
+
+impl ByteConverter for DefaultRestitution {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
+        self.0.append_to_bytes(bytes)?;
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
+        Ok(Self(Restitution::extract_from_bytes(bytes, index)?))
     }
 }
 
@@ -226,6 +280,22 @@ impl ByteConverter for ExternalTorque {
     fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
         let serialized_bytes = Vec::<u8>::extract_from_bytes(bytes, index)?;
         Ok(bincode::deserialize::<ExternalTorque>(&serialized_bytes)?)
+    }
+}
+
+impl ByteConverter for Friction {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
+        self.dynamic_coefficient.append_to_bytes(bytes)?;
+        self.static_coefficient.append_to_bytes(bytes)?;
+        self.combine_rule.append_to_bytes(bytes)?;
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
+        Ok(Self {
+            dynamic_coefficient: Scalar::extract_from_bytes(bytes, index)?,
+            static_coefficient: Scalar::extract_from_bytes(bytes, index)?,
+            combine_rule: CoefficientCombine::extract_from_bytes(bytes, index)?,
+        })
     }
 }
 
@@ -293,6 +363,20 @@ impl ByteConverter for MassProperties3d {
             principal_angular_inertia: Vec3::extract_from_bytes(bytes, index)?,
             local_inertial_frame: Quat::extract_from_bytes(bytes, index)?,
             center_of_mass: Vec3::extract_from_bytes(bytes, index)?,
+        })
+    }
+}
+
+impl ByteConverter for Restitution {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
+        self.coefficient.append_to_bytes(bytes)?;
+        self.combine_rule.append_to_bytes(bytes)?;
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
+        Ok(Self {
+            coefficient: Scalar::extract_from_bytes(bytes, index)?,
+            combine_rule: CoefficientCombine::extract_from_bytes(bytes, index)?,
         })
     }
 }
