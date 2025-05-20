@@ -1,6 +1,6 @@
-use bevy::{input::{keyboard::NativeKeyCode, mouse::MouseScrollUnit}, math::Affine3, prelude::*};
+use bevy::{asset::uuid::Uuid, input::{keyboard::NativeKeyCode, mouse::MouseScrollUnit}, math::Affine3, pbr::wireframe::{ExtractedWireframeColor, Mesh3dWireframe, NoWireframe, Wireframe, WireframeColor, WireframeConfig, WireframeMaterial}, prelude::*};
 use crate::ByteConverter;
-use std::error::Error;
+use std::{convert::Infallible, error::Error};
 
 impl ByteConverter for KeyCode {
     #[inline(always)]
@@ -762,5 +762,156 @@ where
             hashmap.insert(key, value);
         }
         Ok(hashmap)
+    }
+}
+
+impl ByteConverter for Uuid {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> std::result::Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        let uuid_bytes = self.as_bytes();
+        uuid_bytes.append_to_bytes(bytes)?;
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> std::result::Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        let uuid_bytes = <[u8; 16]>::extract_from_bytes(bytes, index)?;
+        Ok(Self::from_bytes(uuid_bytes))
+    }
+}
+
+impl ByteConverter for Wireframe {
+    fn append_to_bytes(&self, _bytes: &mut Vec<u8>) -> std::result::Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(_bytes: &'a TBytes, _index: &mut usize) -> std::result::Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        Ok(Self)
+    }
+}
+
+impl ByteConverter for WireframeColor {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> std::result::Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        self.color.append_to_bytes(bytes)?;
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> std::result::Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        Ok(Self {
+            color: Color::extract_from_bytes(bytes, index)?,
+        })
+    }
+}
+
+impl ByteConverter for ExtractedWireframeColor {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> std::result::Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        self.color.append_to_bytes(bytes)?;
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> std::result::Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        Ok(Self {
+            color: <[f32; 4]>::extract_from_bytes(bytes, index)?,
+        })
+    }
+}
+
+impl ByteConverter for NoWireframe {
+    fn append_to_bytes(&self, _bytes: &mut Vec<u8>) -> std::result::Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(_bytes: &'a TBytes, _index: &mut usize) -> std::result::Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        Ok(Self)
+    }
+}
+
+impl ByteConverter for Mesh3dWireframe {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> std::result::Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        self.0.append_to_bytes(bytes)?;
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> std::result::Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        Ok(Self(Handle::<WireframeMaterial>::extract_from_bytes(bytes, index)?))
+    }
+}
+
+impl ByteConverter for WireframeConfig {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> std::result::Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        self.global.append_to_bytes(bytes)?;
+        self.default_color.append_to_bytes(bytes)?;
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> std::result::Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        Ok(Self {
+            global: bool::extract_from_bytes(bytes, index)?,
+            default_color: Color::extract_from_bytes(bytes, index)?,
+        })
+    }
+}
+
+pub struct BevyWorldRefSingleton(Infallible);
+
+impl BevyWorldRefSingleton {
+    pub fn set(world: &World, f: impl FnOnce() -> Result<(), Box<dyn Error + Send + Sync + 'static>>) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        WORLD.set::<_, Result<(), Box<dyn Error + Send + Sync + 'static>>>(world, f)
+    }
+}
+
+scoped_tls_hkt::scoped_thread_local!(
+    static WORLD: World
+);
+
+pub struct BevyWorldMutSingleton(Infallible);
+
+impl BevyWorldMutSingleton {
+    pub fn set(world: &mut World, f: impl FnOnce() -> Result<(), Box<dyn Error + Send + Sync + 'static>>) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        WORLD_MUT.set::<_, Result<(), Box<dyn Error + Send + Sync + 'static>>>(world, f)
+    }
+}
+
+scoped_tls_hkt::scoped_thread_local!(
+    static mut WORLD_MUT: World
+);
+
+pub trait BevyAssetIdentifier {
+    type TIdentifier: ByteConverter;
+
+    fn get_identifier(&self, world: &World) -> Result<Self::TIdentifier, Box<dyn Error + Send + Sync + 'static>>;
+    fn from_identifier(world: &mut World, identifier: Self::TIdentifier) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized;
+}
+
+impl BevyAssetIdentifier for Handle<WireframeMaterial> {
+    type TIdentifier = Uuid;
+
+    fn get_identifier(&self, _world: &World) -> Result<Self::TIdentifier, Box<dyn Error + Send + Sync + 'static>> {
+        let AssetId::Uuid { uuid } = self.id() else {
+            return Err("Asset was not registered with UUID.".into());
+        };
+        Ok(uuid)
+    }
+    fn from_identifier(world: &mut World, identifier: Self::TIdentifier) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        let asset_id = AssetId::Uuid { uuid: identifier };
+        let mut assets = world.get_resource_mut::<Assets<WireframeMaterial>>().ok_or("Failed to get AssetServer.")?;
+        let handle = assets.get_strong_handle(asset_id).ok_or("Failed to find handle by UUID.")?;
+        Ok(handle)
+    }
+}
+
+impl ByteConverter for Handle<WireframeMaterial> {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> std::result::Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        let identifier = if WORLD.is_set() {
+            WORLD.with(|world| {
+                self.get_identifier(world)
+            })?
+        } else if WORLD_MUT.is_set() {
+            WORLD_MUT.with(|world| {
+                self.get_identifier(world)
+            })?
+        } else {
+            return Err("Neither BevyWorldRefSingleton nor BevyWorldMutSingleton is set.".into());
+        };
+        identifier.append_to_bytes(bytes)?;
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> std::result::Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        let identifier = Uuid::extract_from_bytes(bytes, index)?;
+        let handle = WORLD_MUT.with(|world| {
+            Self::from_identifier(world, identifier)
+        })?;
+        Ok(handle)
     }
 }

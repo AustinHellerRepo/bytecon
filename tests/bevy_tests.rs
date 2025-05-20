@@ -2,8 +2,8 @@
 mod bevy_tests {
     use std::error::Error;
 
-    use bevy::{ecs::{component::Component, entity::Entity, resource::Resource, world::World}, transform::components::Transform};
-    use bytecon::{ByteConverter, Context, DeserializationByteConverterFactory, SerializationByteConverterFactory};
+    use bevy::{asset::{uuid::Uuid, AssetId, Assets}, color::Color, ecs::{component::Component, entity::Entity, resource::Resource, world::World}, pbr::wireframe::WireframeMaterial, transform::components::Transform};
+    use bytecon::{bevy::{BevyWorldMutSingleton, BevyWorldRefSingleton}, ByteConverter, Context, DeserializationByteConverterFactory, SerializationByteConverterFactory};
 
     #[cfg(feature = "bevy")]
     #[test]
@@ -163,5 +163,29 @@ mod bevy_tests {
         };
         let type_name = std::any::type_name::<ReplicatedResource>();
         byte_converter_factory.deserialize(&mut context, type_name).unwrap();
+    }
+
+    #[test]
+    fn test_a8e9_serialize_and_deserialize_asset_handle() {
+        let mut world = World::default();
+        world.init_resource::<Assets<WireframeMaterial>>();
+        
+        let mut wireframe_assets = world.get_resource_mut::<Assets<WireframeMaterial>>().expect("Failed to find WireframeMaterial assets.");
+
+        let wireframe_material = WireframeMaterial {
+            color: Color::WHITE,
+        };
+        let asset_id = AssetId::Uuid {
+            uuid: Uuid::parse_str("ba2e24ab-7460-4647-87f2-0581bac4360a").unwrap(),
+        };
+        wireframe_assets.insert(asset_id, wireframe_material);
+        let expected_handle = wireframe_assets.get_strong_handle(asset_id).expect("Failed to find handle for AssetId.");
+
+        BevyWorldMutSingleton::set(&mut world, || {
+            let actual_handle = expected_handle.clone_via_bytes().expect("Failed to clone via bytes.");
+            assert_eq!(expected_handle, actual_handle);
+            Ok(())
+        })
+            .expect("Failed to set world.");
     }
 }
