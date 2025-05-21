@@ -1,4 +1,4 @@
-use bevy::{asset::uuid::Uuid, input::{keyboard::NativeKeyCode, mouse::MouseScrollUnit}, math::Affine3, pbr::wireframe::{ExtractedWireframeColor, Mesh3dWireframe, NoWireframe, Wireframe, WireframeColor, WireframeConfig, WireframeMaterial}, prelude::*};
+use bevy::{asset::uuid::Uuid, input::{keyboard::NativeKeyCode, mouse::MouseScrollUnit}, math::Affine3, pbr::wireframe::{ExtractedWireframeColor, Mesh3dWireframe, NoWireframe, Wireframe, WireframeColor, WireframeConfig, WireframeMaterial}, prelude::*, render::render_resource::AsBindGroupShaderType};
 use crate::ByteConverter;
 use std::{convert::Infallible, error::Error};
 
@@ -542,6 +542,1104 @@ impl ByteConverter for Transform {
     }
 }
 
+impl ByteConverter for Node {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> std::result::Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        self.display.append_to_bytes(bytes)?;
+        self.box_sizing.append_to_bytes(bytes)?;
+        self.position_type.append_to_bytes(bytes)?;
+        self.overflow.append_to_bytes(bytes)?;
+        self.overflow_clip_margin.append_to_bytes(bytes)?;
+        self.left.append_to_bytes(bytes)?;
+        self.right.append_to_bytes(bytes)?;
+        self.top.append_to_bytes(bytes)?;
+        self.bottom.append_to_bytes(bytes)?;
+        self.width.append_to_bytes(bytes)?;
+        self.height.append_to_bytes(bytes)?;
+        self.min_width.append_to_bytes(bytes)?;
+        self.min_height.append_to_bytes(bytes)?;
+        self.max_width.append_to_bytes(bytes)?;
+        self.max_height.append_to_bytes(bytes)?;
+        self.aspect_ratio.append_to_bytes(bytes)?;
+        self.align_items.append_to_bytes(bytes)?;
+        self.justify_items.append_to_bytes(bytes)?;
+        self.align_self.append_to_bytes(bytes)?;
+        self.justify_self.append_to_bytes(bytes)?;
+        self.align_content.append_to_bytes(bytes)?;
+        self.justify_content.append_to_bytes(bytes)?;
+        self.margin.append_to_bytes(bytes)?;
+        self.padding.append_to_bytes(bytes)?;
+        self.border.append_to_bytes(bytes)?;
+        self.flex_direction.append_to_bytes(bytes)?;
+        self.flex_wrap.append_to_bytes(bytes)?;
+        self.flex_grow.append_to_bytes(bytes)?;
+        self.flex_shrink.append_to_bytes(bytes)?;
+        self.flex_basis.append_to_bytes(bytes)?;
+        self.row_gap.append_to_bytes(bytes)?;
+        self.column_gap.append_to_bytes(bytes)?;
+        self.grid_auto_flow.append_to_bytes(bytes)?;
+        self.grid_template_rows.append_to_bytes(bytes)?;
+        self.grid_template_columns.append_to_bytes(bytes)?;
+        self.grid_auto_rows.append_to_bytes(bytes)?;
+        self.grid_auto_columns.append_to_bytes(bytes)?;
+        self.grid_row.append_to_bytes(bytes)?;
+        self.grid_column.append_to_bytes(bytes)?;
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> std::result::Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        Ok(Self {
+            display: Display::extract_from_bytes(bytes, index)?,
+            box_sizing: BoxSizing::extract_from_bytes(bytes, index)?,
+            position_type: PositionType::extract_from_bytes(bytes, index)?,
+            overflow: Overflow::extract_from_bytes(bytes, index)?,
+            overflow_clip_margin: OverflowClipMargin::extract_from_bytes(bytes, index)?,
+            left: Val::extract_from_bytes(bytes, index)?,
+            right: Val::extract_from_bytes(bytes, index)?,
+            top: Val::extract_from_bytes(bytes, index)?,
+            bottom: Val::extract_from_bytes(bytes, index)?,
+            width: Val::extract_from_bytes(bytes, index)?,
+            height: Val::extract_from_bytes(bytes, index)?,
+            min_width: Val::extract_from_bytes(bytes, index)?,
+            min_height: Val::extract_from_bytes(bytes, index)?,
+            max_width: Val::extract_from_bytes(bytes, index)?,
+            max_height: Val::extract_from_bytes(bytes, index)?,
+            aspect_ratio: Option::<f32>::extract_from_bytes(bytes, index)?,
+            align_items: AlignItems::extract_from_bytes(bytes, index)?,
+            justify_items: JustifyItems::extract_from_bytes(bytes, index)?,
+            align_self: AlignSelf::extract_from_bytes(bytes, index)?,
+            justify_self: JustifySelf::extract_from_bytes(bytes, index)?,
+            align_content: AlignContent::extract_from_bytes(bytes, index)?,
+            justify_content: JustifyContent::extract_from_bytes(bytes, index)?,
+            margin: UiRect::extract_from_bytes(bytes, index)?,
+            padding: UiRect::extract_from_bytes(bytes, index)?,
+            border: UiRect::extract_from_bytes(bytes, index)?,
+            flex_direction: FlexDirection::extract_from_bytes(bytes, index)?,
+            flex_wrap: FlexWrap::extract_from_bytes(bytes, index)?,
+            flex_grow: f32::extract_from_bytes(bytes, index)?,
+            flex_shrink: f32::extract_from_bytes(bytes, index)?,
+            flex_basis: Val::extract_from_bytes(bytes, index)?,
+            row_gap: Val::extract_from_bytes(bytes, index)?,
+            column_gap: Val::extract_from_bytes(bytes, index)?,
+            grid_auto_flow: GridAutoFlow::extract_from_bytes(bytes, index)?,
+            grid_template_rows: Vec::<RepeatedGridTrack>::extract_from_bytes(bytes, index)?,
+            grid_template_columns: Vec::<RepeatedGridTrack>::extract_from_bytes(bytes, index)?,
+            grid_auto_rows: Vec::<GridTrack>::extract_from_bytes(bytes, index)?,
+            grid_auto_columns: Vec::<GridTrack>::extract_from_bytes(bytes, index)?,
+            grid_row: GridPlacement::extract_from_bytes(bytes, index)?,
+            grid_column: GridPlacement::extract_from_bytes(bytes, index)?,
+        })
+    }
+}
+
+impl ByteConverter for ComputedNode {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> std::result::Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        todo!()
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> std::result::Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        todo!()
+    }
+}
+
+impl ByteConverter for UiTargetCamera {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> std::result::Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        self.0.append_to_bytes(bytes)?;
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> std::result::Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        Ok(Self(Entity::extract_from_bytes(bytes, index)?))
+    }
+}
+
+impl ByteConverter for IsDefaultUiCamera {
+    fn append_to_bytes(&self, _bytes: &mut Vec<u8>) -> std::result::Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(_bytes: &'a TBytes, _index: &mut usize) -> std::result::Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        Ok(Self)
+    }
+}
+
+impl ByteConverter for UiAntiAlias {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> std::result::Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        match self {
+            Self::On => {
+                0u8.append_to_bytes(bytes)?;
+            },
+            Self::Off => {
+                1u8.append_to_bytes(bytes)?;
+            },
+        }
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> std::result::Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        let enum_variant_byte = u8::extract_from_bytes(bytes, index)?;
+        match enum_variant_byte {
+            0u8 => Ok(Self::On),
+            1u8 => Ok(Self::Off),
+            _ => Err("Unexpected enum variant byte.".into())
+        }
+    }
+}
+
+impl ByteConverter for BoxShadowSamples {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> std::result::Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        self.0.append_to_bytes(bytes)?;
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> std::result::Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        Ok(Self(u32::extract_from_bytes(bytes, index)?))
+    }
+}
+
+impl ByteConverter for TextShadow {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
+        self.offset.append_to_bytes(bytes)?;
+        self.color.append_to_bytes(bytes)?;
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
+        Ok(Self {
+            offset: Vec2::extract_from_bytes(bytes, index)?,
+            color: Color::extract_from_bytes(bytes, index)?,
+        })
+    }
+}
+
+impl ByteConverter for Display {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> std::result::Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        match self {
+            Self::Flex => {
+                0u8.append_to_bytes(bytes)?;
+            },
+            Self::Grid => {
+                1u8.append_to_bytes(bytes)?;
+            },
+            Self::Block => {
+                2u8.append_to_bytes(bytes)?;
+            },
+            Self::None => {
+                3u8.append_to_bytes(bytes)?;
+            },
+        }
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> std::result::Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        let enum_variant_byte = u8::extract_from_bytes(bytes, index)?;
+        match enum_variant_byte {
+            0u8 => Ok(Self::Flex),
+            1u8 => Ok(Self::Grid),
+            2u8 => Ok(Self::Block),
+            3u8 => Ok(Self::None),
+            _ => Err("Unexpected enum variant byte.".into())
+        }
+    }
+}
+
+impl ByteConverter for BoxSizing {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> std::result::Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        match self {
+            Self::BorderBox => {
+                0u8.append_to_bytes(bytes)?;
+            },
+            Self::ContentBox => {
+                1u8.append_to_bytes(bytes)?;
+            },
+        }
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> std::result::Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        let enum_variant_byte = u8::extract_from_bytes(bytes, index)?;
+        match enum_variant_byte {
+            0u8 => Ok(Self::BorderBox),
+            1u8 => Ok(Self::ContentBox),
+            _ => Err("Unexpected enum variant byte.".into())
+        }
+    }
+}
+
+impl ByteConverter for PositionType {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> std::result::Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        match self {
+            Self::Relative => {
+                0u8.append_to_bytes(bytes)?;
+            },
+            Self::Absolute => {
+                1u8.append_to_bytes(bytes)?;
+            },
+        }
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> std::result::Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        let enum_variant_byte = u8::extract_from_bytes(bytes, index)?;
+        match enum_variant_byte {
+            0u8 => Ok(Self::Relative),
+            1u8 => Ok(Self::Absolute),
+            _ => Err("Unexpected enum variant byte.".into())
+        }
+    }
+}
+
+impl ByteConverter for Overflow {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> std::result::Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        self.x.append_to_bytes(bytes)?;
+        self.y.append_to_bytes(bytes)?;
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> std::result::Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        Ok(Self {
+            x: OverflowAxis::extract_from_bytes(bytes, index)?,
+            y: OverflowAxis::extract_from_bytes(bytes, index)?,
+        })
+    }
+}
+
+impl ByteConverter for OverflowAxis {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> std::result::Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        match self {
+            Self::Visible => {
+                0u8.append_to_bytes(bytes)?;
+            },
+            Self::Clip => {
+                1u8.append_to_bytes(bytes)?;
+            },
+            Self::Hidden => {
+                2u8.append_to_bytes(bytes)?;
+            },
+            Self::Scroll => {
+                3u8.append_to_bytes(bytes)?;
+            },
+        }
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> std::result::Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        let enum_variant_byte = u8::extract_from_bytes(bytes, index)?;
+        match enum_variant_byte {
+            0u8 => Ok(Self::Visible),
+            1u8 => Ok(Self::Clip),
+            2u8 => Ok(Self::Hidden),
+            3u8 => Ok(Self::Scroll),
+            _ => Err("Unexpected enum variant byte.".into()),
+        }
+    }
+}
+
+impl ByteConverter for OverflowClipMargin {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> std::result::Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        self.visual_box.append_to_bytes(bytes)?;
+        self.margin.append_to_bytes(bytes)?;
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> std::result::Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        Ok(Self {
+            visual_box: OverflowClipBox::extract_from_bytes(bytes, index)?,
+            margin: f32::extract_from_bytes(bytes, index)?,
+        })
+    }
+}
+
+impl ByteConverter for OverflowClipBox {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> std::result::Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        match self {
+            Self::ContentBox => {
+                0u8.append_to_bytes(bytes)?;
+            },
+            Self::PaddingBox => {
+                1u8.append_to_bytes(bytes)?;
+            },
+            Self::BorderBox => {
+                2u8.append_to_bytes(bytes)?;
+            },
+        }
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> std::result::Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        let enum_variant_byte = u8::extract_from_bytes(bytes, index)?;
+        match enum_variant_byte {
+            0u8 => Ok(Self::ContentBox),
+            1u8 => Ok(Self::PaddingBox),
+            2u8 => Ok(Self::BorderBox),
+            _ => Err("Unexpected enum variant byte.".into())
+        }
+    }
+}
+
+impl ByteConverter for Val {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> std::result::Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        match self {
+            Self::Auto => {
+                0u8.append_to_bytes(bytes)?;
+            },
+            Self::Px(value) => {
+                1u8.append_to_bytes(bytes)?;
+                value.append_to_bytes(bytes)?;
+            },
+            Self::Percent(value) => {
+                2u8.append_to_bytes(bytes)?;
+                value.append_to_bytes(bytes)?;
+            },
+            Self::Vw(value) => {
+                3u8.append_to_bytes(bytes)?;
+                value.append_to_bytes(bytes)?;
+            },
+            Self::Vh(value) => {
+                4u8.append_to_bytes(bytes)?;
+                value.append_to_bytes(bytes)?;
+            },
+            Self::VMin(value) => {
+                5u8.append_to_bytes(bytes)?;
+                value.append_to_bytes(bytes)?;
+            },
+            Self::VMax(value) => {
+                6u8.append_to_bytes(bytes)?;
+                value.append_to_bytes(bytes)?;
+            },
+        }
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> std::result::Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        let enum_variant_byte = u8::extract_from_bytes(bytes, index)?;
+        match enum_variant_byte {
+            0u8 => Ok(Self::Auto),
+            1u8 => Ok(Self::Px(f32::extract_from_bytes(bytes, index)?)),
+            2u8 => Ok(Self::Percent(f32::extract_from_bytes(bytes, index)?)),
+            3u8 => Ok(Self::Vw(f32::extract_from_bytes(bytes, index)?)),
+            4u8 => Ok(Self::Vh(f32::extract_from_bytes(bytes, index)?)),
+            5u8 => Ok(Self::VMin(f32::extract_from_bytes(bytes, index)?)),
+            6u8 => Ok(Self::VMax(f32::extract_from_bytes(bytes, index)?)),
+            _ => Err("Unexpected enum variant byte.".into())
+        }
+    }
+}
+
+impl ByteConverter for AlignItems {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> std::result::Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        match self {
+            Self::Default => {
+                0u8.append_to_bytes(bytes)?;
+            },
+            Self::Start => {
+                1u8.append_to_bytes(bytes)?;
+            },
+            Self::End => {
+                2u8.append_to_bytes(bytes)?;
+            },
+            Self::FlexStart => {
+                3u8.append_to_bytes(bytes)?;
+            },
+            Self::FlexEnd => {
+                4u8.append_to_bytes(bytes)?;
+            },
+            Self::Center => {
+                5u8.append_to_bytes(bytes)?;
+            },
+            Self::Baseline => {
+                6u8.append_to_bytes(bytes)?;
+            },
+            Self::Stretch => {
+                7u8.append_to_bytes(bytes)?;
+            },
+        }
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> std::result::Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        let enum_variant_byte = u8::extract_from_bytes(bytes, index)?;
+        match enum_variant_byte {
+            0u8 => Ok(Self::Default),
+            1u8 => Ok(Self::Start),
+            2u8 => Ok(Self::End),
+            3u8 => Ok(Self::FlexStart),
+            4u8 => Ok(Self::FlexEnd),
+            5u8 => Ok(Self::Center),
+            6u8 => Ok(Self::Baseline),
+            7u8 => Ok(Self::Stretch),
+            _ => Err("Unexpected enum variant byte.".into())
+        }
+    }
+}
+
+impl ByteConverter for JustifyItems {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> std::result::Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        match self {
+            Self::Default => {
+                0u8.append_to_bytes(bytes)?;
+            },
+            Self::Start => {
+                1u8.append_to_bytes(bytes)?;
+            },
+            Self::End => {
+                2u8.append_to_bytes(bytes)?;
+            },
+            Self::Center => {
+                3u8.append_to_bytes(bytes)?;
+            },
+            Self::Baseline => {
+                4u8.append_to_bytes(bytes)?;
+            },
+            Self::Stretch => {
+                5u8.append_to_bytes(bytes)?;
+            },
+        }
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> std::result::Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        let enum_variant_byte = u8::extract_from_bytes(bytes, index)?;
+        match enum_variant_byte {
+            0u8 => Ok(Self::Default),
+            1u8 => Ok(Self::Start),
+            2u8 => Ok(Self::End),
+            3u8 => Ok(Self::Center),
+            4u8 => Ok(Self::Baseline),
+            5u8 => Ok(Self::Stretch),
+            _ => Err("Unexpected enum variant byte.".into()),
+        }
+    }
+}
+
+impl ByteConverter for AlignSelf {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> std::result::Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        match self {
+            Self::Auto => {
+                0u8.append_to_bytes(bytes)?;
+            },
+            Self::Start => {
+                1u8.append_to_bytes(bytes)?;
+            },
+            Self::End => {
+                2u8.append_to_bytes(bytes)?;
+            },
+            Self::FlexStart => {
+                3u8.append_to_bytes(bytes)?;
+            }
+            Self::FlexEnd => {
+                4u8.append_to_bytes(bytes)?;
+            }
+            Self::Center => {
+                5u8.append_to_bytes(bytes)?;
+            },
+            Self::Baseline => {
+                6u8.append_to_bytes(bytes)?;
+            },
+            Self::Stretch => {
+                7u8.append_to_bytes(bytes)?;
+            },
+        }
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> std::result::Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        let enum_variant_byte = u8::extract_from_bytes(bytes, index)?;
+        match enum_variant_byte {
+            0u8 => Ok(Self::Auto),
+            1u8 => Ok(Self::Start),
+            2u8 => Ok(Self::End),
+            3u8 => Ok(Self::FlexStart),
+            4u8 => Ok(Self::FlexEnd),
+            5u8 => Ok(Self::Center),
+            6u8 => Ok(Self::Baseline),
+            7u8 => Ok(Self::Stretch),
+            _ => Err("Unexpected enum variant byte.".into()),
+        }
+    }
+}
+
+impl ByteConverter for JustifySelf {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> std::result::Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        match self {
+            Self::Auto => {
+                0u8.append_to_bytes(bytes)?;
+            },
+            Self::Start => {
+                1u8.append_to_bytes(bytes)?;
+            },
+            Self::End => {
+                2u8.append_to_bytes(bytes)?;
+            },
+            Self::Center => {
+                3u8.append_to_bytes(bytes)?;
+            },
+            Self::Baseline => {
+                4u8.append_to_bytes(bytes)?;
+            },
+            Self::Stretch => {
+                5u8.append_to_bytes(bytes)?;
+            },
+        }
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> std::result::Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        let enum_variant_byte = u8::extract_from_bytes(bytes, index)?;
+        match enum_variant_byte {
+            0u8 => Ok(Self::Auto),
+            1u8 => Ok(Self::Start),
+            2u8 => Ok(Self::End),
+            3u8 => Ok(Self::Center),
+            4u8 => Ok(Self::Baseline),
+            5u8 => Ok(Self::Stretch),
+            _ => Err("Unexpected enum variant byte.".into()),
+        }
+    }
+}
+
+impl ByteConverter for AlignContent {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> std::result::Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        match self {
+            Self::Default => {
+                0u8.append_to_bytes(bytes)?;
+            },
+            Self::Start => {
+                1u8.append_to_bytes(bytes)?;
+            },
+            Self::End => {
+                2u8.append_to_bytes(bytes)?;
+            },
+            Self::FlexStart => {
+                3u8.append_to_bytes(bytes)?;
+            }
+            Self::FlexEnd => {
+                4u8.append_to_bytes(bytes)?;
+            }
+            Self::Center => {
+                5u8.append_to_bytes(bytes)?;
+            },
+            Self::Stretch => {
+                6u8.append_to_bytes(bytes)?;
+            },
+            Self::SpaceBetween => {
+                7u8.append_to_bytes(bytes)?;
+            },
+            Self::SpaceEvenly => {
+                8u8.append_to_bytes(bytes)?;
+            },
+            Self::SpaceAround => {
+                9u8.append_to_bytes(bytes)?;
+            },
+        }
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> std::result::Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        let enum_variant_byte = u8::extract_from_bytes(bytes, index)?;
+        match enum_variant_byte {
+            0u8 => Ok(Self::Default),
+            1u8 => Ok(Self::Start),
+            2u8 => Ok(Self::End),
+            3u8 => Ok(Self::FlexStart),
+            4u8 => Ok(Self::FlexEnd),
+            5u8 => Ok(Self::Center),
+            6u8 => Ok(Self::Stretch),
+            7u8 => Ok(Self::SpaceBetween),
+            8u8 => Ok(Self::SpaceEvenly),
+            9u8 => Ok(Self::SpaceAround),
+            _ => Err("Unexpected enum variant byte.".into()),
+        }
+    }
+}
+
+impl ByteConverter for JustifyContent {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> std::result::Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        match self {
+            Self::Default => {
+                0u8.append_to_bytes(bytes)?;
+            },
+            Self::Start => {
+                1u8.append_to_bytes(bytes)?;
+            },
+            Self::End => {
+                2u8.append_to_bytes(bytes)?;
+            },
+            Self::FlexStart => {
+                3u8.append_to_bytes(bytes)?;
+            }
+            Self::FlexEnd => {
+                4u8.append_to_bytes(bytes)?;
+            }
+            Self::Center => {
+                5u8.append_to_bytes(bytes)?;
+            },
+            Self::Stretch => {
+                6u8.append_to_bytes(bytes)?;
+            },
+            Self::SpaceBetween => {
+                7u8.append_to_bytes(bytes)?;
+            },
+            Self::SpaceEvenly => {
+                8u8.append_to_bytes(bytes)?;
+            },
+            Self::SpaceAround => {
+                9u8.append_to_bytes(bytes)?;
+            },
+        }
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> std::result::Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        let enum_variant_byte = u8::extract_from_bytes(bytes, index)?;
+        match enum_variant_byte {
+            0u8 => Ok(Self::Default),
+            1u8 => Ok(Self::Start),
+            2u8 => Ok(Self::End),
+            3u8 => Ok(Self::FlexStart),
+            4u8 => Ok(Self::FlexEnd),
+            5u8 => Ok(Self::Center),
+            6u8 => Ok(Self::Stretch),
+            7u8 => Ok(Self::SpaceBetween),
+            8u8 => Ok(Self::SpaceEvenly),
+            9u8 => Ok(Self::SpaceAround),
+            _ => Err("Unexpected enum variant byte.".into()),
+        }
+    }
+}
+
+impl ByteConverter for UiRect {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> std::result::Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        self.left.append_to_bytes(bytes)?;
+        self.right.append_to_bytes(bytes)?;
+        self.top.append_to_bytes(bytes)?;
+        self.bottom.append_to_bytes(bytes)?;
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> std::result::Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        Ok(Self {
+            left: Val::extract_from_bytes(bytes, index)?,
+            right: Val::extract_from_bytes(bytes, index)?,
+            top: Val::extract_from_bytes(bytes, index)?,
+            bottom: Val::extract_from_bytes(bytes, index)?,
+        })
+    }
+}
+
+impl ByteConverter for FlexDirection {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> std::result::Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        match self {
+            Self::Row => {
+                0u8.append_to_bytes(bytes)?;
+            },
+            Self::Column => {
+                1u8.append_to_bytes(bytes)?;
+            },
+            Self::RowReverse => {
+                2u8.append_to_bytes(bytes)?;
+            },
+            Self::ColumnReverse => {
+                3u8.append_to_bytes(bytes)?;
+            },
+        }
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> std::result::Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        let enum_variant_byte = u8::extract_from_bytes(bytes, index)?;
+        match enum_variant_byte {
+            0u8 => Ok(Self::Row),
+            1u8 => Ok(Self::Column),
+            2u8 => Ok(Self::RowReverse),
+            3u8 => Ok(Self::ColumnReverse),
+            _ => Err("Unexpected enum variant byte.".into()),
+        }    
+    }
+}
+
+impl ByteConverter for GridAutoFlow {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> std::result::Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        match self {
+            Self::Row => {
+                0u8.append_to_bytes(bytes)?;
+            },
+            Self::Column => {
+                1u8.append_to_bytes(bytes)?;
+            },
+            Self::RowDense => {
+                2u8.append_to_bytes(bytes)?;
+            },
+            Self::ColumnDense => {
+                3u8.append_to_bytes(bytes)?;
+            }
+        }
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> std::result::Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        let enum_variant_byte = u8::extract_from_bytes(bytes, index)?;
+        match enum_variant_byte {
+            0u8 => Ok(Self::Row),
+            1u8 => Ok(Self::Column),
+            2u8 => Ok(Self::RowDense),
+            3u8 => Ok(Self::ColumnDense),
+            _ => Err("Unexpected enum variant byte.".into()),
+        }
+    }
+}
+
+impl ByteConverter for MinTrackSizingFunction {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> std::result::Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        match self {
+            Self::Px(value) => {
+                0u8.append_to_bytes(bytes)?;
+                value.append_to_bytes(bytes)?;
+            },
+            Self::Percent(value) => {
+                1u8.append_to_bytes(bytes)?;
+                value.append_to_bytes(bytes)?;
+            },
+            Self::MinContent => {
+                2u8.append_to_bytes(bytes)?;
+            },
+            Self::MaxContent => {
+                3u8.append_to_bytes(bytes)?;
+            },
+            Self::Auto => {
+                4u8.append_to_bytes(bytes)?;
+            },
+            Self::VMin(value) => {
+                5u8.append_to_bytes(bytes)?;
+                value.append_to_bytes(bytes)?;
+            },
+            Self::VMax(value) => {
+                6u8.append_to_bytes(bytes)?;
+                value.append_to_bytes(bytes)?;
+            },
+            Self::Vh(value) => {
+                7u8.append_to_bytes(bytes)?;
+                value.append_to_bytes(bytes)?;
+            },
+            Self::Vw(value) => {
+                8u8.append_to_bytes(bytes)?;
+                value.append_to_bytes(bytes)?;
+            },
+        }
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> std::result::Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        let enum_variant_byte = u8::extract_from_bytes(bytes, index)?;
+        match enum_variant_byte {
+            0u8 => Ok(Self::Px(f32::extract_from_bytes(bytes, index)?)),
+            1u8 => Ok(Self::Percent(f32::extract_from_bytes(bytes, index)?)),
+            2u8 => Ok(Self::MinContent),
+            3u8 => Ok(Self::MaxContent),
+            4u8 => Ok(Self::Auto),
+            5u8 => Ok(Self::VMin(f32::extract_from_bytes(bytes, index)?)),
+            6u8 => Ok(Self::VMax(f32::extract_from_bytes(bytes, index)?)),
+            7u8 => Ok(Self::Vh(f32::extract_from_bytes(bytes, index)?)),
+            8u8 => Ok(Self::Vw(f32::extract_from_bytes(bytes, index)?)),
+            _ => Err("Unexpected enum variant byte.".into()),
+        }
+    }
+}
+
+impl ByteConverter for MaxTrackSizingFunction {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> std::result::Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        match self {
+            Self::Px(value) => {
+                0u8.append_to_bytes(bytes)?;
+                value.append_to_bytes(bytes)?;
+            },
+            Self::Percent(value) => {
+                1u8.append_to_bytes(bytes)?;
+                value.append_to_bytes(bytes)?;
+            },
+            Self::MinContent => {
+                2u8.append_to_bytes(bytes)?;
+            },
+            Self::MaxContent => {
+                3u8.append_to_bytes(bytes)?;
+            },
+            Self::FitContentPx(value) => {
+                4u8.append_to_bytes(bytes)?;
+                value.append_to_bytes(bytes)?;
+            },
+            Self::FitContentPercent(value) => {
+                5u8.append_to_bytes(bytes)?;
+                value.append_to_bytes(bytes)?;
+            },
+            Self::Auto => {
+                6u8.append_to_bytes(bytes)?;
+            },
+            Self::Fraction(value) => {
+                7u8.append_to_bytes(bytes)?;
+                value.append_to_bytes(bytes)?;
+            },
+            Self::VMin(value) => {
+                8u8.append_to_bytes(bytes)?;
+                value.append_to_bytes(bytes)?;
+            },
+            Self::VMax(value) => {
+                9u8.append_to_bytes(bytes)?;
+                value.append_to_bytes(bytes)?;
+            },
+            Self::Vh(value) => {
+                10u8.append_to_bytes(bytes)?;
+                value.append_to_bytes(bytes)?;
+            },
+            Self::Vw(value) => {
+                11u8.append_to_bytes(bytes)?;
+                value.append_to_bytes(bytes)?;
+            },
+        }
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> std::result::Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        let enum_variant_byte = u8::extract_from_bytes(bytes, index)?;
+        match enum_variant_byte {
+            0u8 => Ok(Self::Px(f32::extract_from_bytes(bytes, index)?)),
+            1u8 => Ok(Self::Percent(f32::extract_from_bytes(bytes, index)?)),
+            2u8 => Ok(Self::MinContent),
+            3u8 => Ok(Self::MaxContent),
+            4u8 => Ok(Self::FitContentPx(f32::extract_from_bytes(bytes, index)?)),
+            5u8 => Ok(Self::FitContentPercent(f32::extract_from_bytes(bytes, index)?)),
+            6u8 => Ok(Self::Auto),
+            7u8 => Ok(Self::Fraction(f32::extract_from_bytes(bytes, index)?)),
+            8u8 => Ok(Self::VMin(f32::extract_from_bytes(bytes, index)?)),
+            9u8 => Ok(Self::VMax(f32::extract_from_bytes(bytes, index)?)),
+            10u8 => Ok(Self::Vh(f32::extract_from_bytes(bytes, index)?)),
+            11u8 => Ok(Self::Vw(f32::extract_from_bytes(bytes, index)?)),
+            _ => Err("Unexpected enum variant byte.".into())
+        }
+    }
+}
+
+impl ByteConverter for GridTrack {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
+        let serialized_bytes = bincode::serialize(self)?;
+        serialized_bytes.append_to_bytes(bytes)?;
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
+        let serialized_bytes = Vec::<u8>::extract_from_bytes(bytes, index)?;
+        Ok(bincode::deserialize::<Self>(&serialized_bytes)?)
+    }
+}
+
+impl ByteConverter for GridTrackRepetition {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> std::result::Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        match self {
+            Self::Count(count) => {
+                0u8.append_to_bytes(bytes)?;
+                count.append_to_bytes(bytes)?;
+            },
+            Self::AutoFill => {
+                1u8.append_to_bytes(bytes)?;
+            },
+            Self::AutoFit => {
+                2u8.append_to_bytes(bytes)?;
+            },
+        }
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> std::result::Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        let enum_variant_byte = u8::extract_from_bytes(bytes, index)?;
+        match enum_variant_byte {
+            0u8 => Ok(Self::Count(u16::extract_from_bytes(bytes, index)?)),
+            1u8 => Ok(Self::AutoFill),
+            2u8 => Ok(Self::AutoFit),
+            _ => Err("Unexpected enum variant byte.".into())
+        }
+    }
+}
+
+impl ByteConverter for RepeatedGridTrack {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
+        let serialized_bytes = bincode::serialize(self)?;
+        serialized_bytes.append_to_bytes(bytes)?;
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
+        let serialized_bytes = Vec::<u8>::extract_from_bytes(bytes, index)?;
+        Ok(bincode::deserialize::<Self>(&serialized_bytes)?)
+    }
+}
+
+impl ByteConverter for FlexWrap {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> std::result::Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        match self {
+            Self::NoWrap => {
+                0u8.append_to_bytes(bytes)?;
+            },
+            Self::Wrap => {
+                1u8.append_to_bytes(bytes)?;
+            },
+            Self::WrapReverse => {
+                2u8.append_to_bytes(bytes)?;
+            }
+        }
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> std::result::Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        let enum_variant_byte = u8::extract_from_bytes(bytes, index)?;
+        match enum_variant_byte {
+            0u8 => Ok(Self::NoWrap),
+            1u8 => Ok(Self::Wrap),
+            2u8 => Ok(Self::WrapReverse),
+            _ => Err("Unexpected enum variant byte.".into()),
+        }
+    }
+}
+
+impl ByteConverter for GridPlacement {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
+        let serialized_bytes = bincode::serialize(self)?;
+        serialized_bytes.append_to_bytes(bytes)?;
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
+        let serialized_bytes = Vec::<u8>::extract_from_bytes(bytes, index)?;
+        Ok(bincode::deserialize::<Self>(&serialized_bytes)?)
+    }
+}
+
+impl ByteConverter for BackgroundColor {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> std::result::Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        self.0.append_to_bytes(bytes)?;
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> std::result::Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        Ok(Self(Color::extract_from_bytes(bytes, index)?))
+    }
+}
+
+impl ByteConverter for BorderColor {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> std::result::Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        self.0.append_to_bytes(bytes)?;
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> std::result::Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        Ok(Self(Color::extract_from_bytes(bytes, index)?))
+    }
+}
+
+impl ByteConverter for Outline {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> std::result::Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        self.width.append_to_bytes(bytes)?;
+        self.offset.append_to_bytes(bytes)?;
+        self.color.append_to_bytes(bytes)?;
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> std::result::Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        Ok(Self {
+            width: Val::extract_from_bytes(bytes, index)?,
+            offset: Val::extract_from_bytes(bytes, index)?,
+            color: Color::extract_from_bytes(bytes, index)?,
+        })
+    }
+}
+
+impl ByteConverter for CalculatedClip {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> std::result::Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        self.clip.append_to_bytes(bytes)?;
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> std::result::Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        Ok(Self {
+            clip: Rect::extract_from_bytes(bytes, index)?,
+        })
+    }
+}
+
+impl ByteConverter for Rect {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> std::result::Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        self.min.append_to_bytes(bytes)?;
+        self.max.append_to_bytes(bytes)?;
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> std::result::Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        Ok(Self {
+            min: Vec2::extract_from_bytes(bytes, index)?,
+            max: Vec2::extract_from_bytes(bytes, index)?,
+        })
+    }
+}
+
+impl ByteConverter for ZIndex {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> std::result::Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        self.0.append_to_bytes(bytes)?;
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> std::result::Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        Ok(Self(i32::extract_from_bytes(bytes, index)?))
+    }
+}
+
+impl ByteConverter for GlobalZIndex {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> std::result::Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        self.0.append_to_bytes(bytes)?;
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> std::result::Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        Ok(Self(i32::extract_from_bytes(bytes, index)?))
+    }
+}
+
+impl ByteConverter for BorderRadius {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> std::result::Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        self.top_left.append_to_bytes(bytes)?;
+        self.top_right.append_to_bytes(bytes)?;
+        self.bottom_left.append_to_bytes(bytes)?;
+        self.bottom_right.append_to_bytes(bytes)?;
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> std::result::Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        Ok(Self {
+            top_left: Val::extract_from_bytes(bytes, index)?,
+            top_right: Val::extract_from_bytes(bytes, index)?,
+            bottom_left: Val::extract_from_bytes(bytes, index)?,
+            bottom_right: Val::extract_from_bytes(bytes, index)?,
+        })
+    }
+}
+
+impl ByteConverter for ResolvedBorderRadius {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> std::result::Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        self.top_left.append_to_bytes(bytes)?;
+        self.top_right.append_to_bytes(bytes)?;
+        self.bottom_left.append_to_bytes(bytes)?;
+        self.bottom_right.append_to_bytes(bytes)?;
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> std::result::Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        Ok(Self {
+            top_left: f32::extract_from_bytes(bytes, index)?,
+            top_right: f32::extract_from_bytes(bytes, index)?,
+            bottom_left: f32::extract_from_bytes(bytes, index)?,
+            bottom_right: f32::extract_from_bytes(bytes, index)?,
+        })
+    }
+}
+
+impl ByteConverter for BoxShadow {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> std::result::Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        self.0.append_to_bytes(bytes)?;
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> std::result::Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        Ok(Self(Vec::<ShadowStyle>::extract_from_bytes(bytes, index)?))
+    }
+}
+
+impl ByteConverter for ShadowStyle {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> std::result::Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        self.color.append_to_bytes(bytes)?;
+        self.x_offset.append_to_bytes(bytes)?;
+        self.y_offset.append_to_bytes(bytes)?;
+        self.spread_radius.append_to_bytes(bytes)?;
+        self.blur_radius.append_to_bytes(bytes)?;
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> std::result::Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        Ok(Self {
+            color: Color::extract_from_bytes(bytes, index)?,
+            x_offset: Val::extract_from_bytes(bytes, index)?,
+            y_offset: Val::extract_from_bytes(bytes, index)?,
+            spread_radius: Val::extract_from_bytes(bytes, index)?,
+            blur_radius: Val::extract_from_bytes(bytes, index)?,
+        })
+    }
+}
+
+impl ByteConverter for LayoutConfig {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> std::result::Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        self.use_rounding.append_to_bytes(bytes)?;
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> std::result::Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        Ok(Self {
+            use_rounding: bool::extract_from_bytes(bytes, index)?,
+        })
+    }
+}
+
 impl ByteConverter for Text {
     #[inline(always)]
     fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
@@ -737,6 +1835,58 @@ impl ByteConverter for Affine3 {
             matrix3: Mat3::extract_from_bytes(bytes, index)?,
             translation: Vec3::extract_from_bytes(bytes, index)?,
         })
+    }
+}
+
+impl ByteConverter for PointLight {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> std::result::Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        self.color.append_to_bytes(bytes)?;
+        self.intensity.append_to_bytes(bytes)?;
+        self.range.append_to_bytes(bytes)?;
+        self.radius.append_to_bytes(bytes)?;
+        self.shadows_enabled.append_to_bytes(bytes)?;
+        //self.soft_shadows_enabled.append_to_bytes(bytes)?;
+        self.affects_lightmapped_mesh_diffuse.append_to_bytes(bytes)?;
+        self.shadow_depth_bias.append_to_bytes(bytes)?;
+        self.shadow_normal_bias.append_to_bytes(bytes)?;
+        self.shadow_map_near_z.append_to_bytes(bytes)?;
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> std::result::Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        Ok(Self {
+            color: Color::extract_from_bytes(bytes, index)?,
+            intensity: f32::extract_from_bytes(bytes, index)?,
+            range: f32::extract_from_bytes(bytes, index)?,
+            radius: f32::extract_from_bytes(bytes, index)?,
+            shadows_enabled: bool::extract_from_bytes(bytes, index)?,
+            affects_lightmapped_mesh_diffuse: bool::extract_from_bytes(bytes, index)?,
+            shadow_depth_bias: f32::extract_from_bytes(bytes, index)?,
+            shadow_normal_bias: f32::extract_from_bytes(bytes, index)?,
+            shadow_map_near_z: f32::extract_from_bytes(bytes, index)?,
+        })
+    }
+}
+
+impl ByteConverter for Mesh3d {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> std::result::Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        self.0.append_to_bytes(bytes)?;
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> std::result::Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        Ok(Self(Handle::<Mesh>::extract_from_bytes(bytes, index)?))
+    }
+}
+
+impl<T> ByteConverter for MeshMaterial3d<T>
+where
+    T: Material
+{
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> std::result::Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        self.0.append_to_bytes(bytes)?;
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> std::result::Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        Ok(Self(Handle::<T>::extract_from_bytes(bytes, index)?))
     }
 }
 

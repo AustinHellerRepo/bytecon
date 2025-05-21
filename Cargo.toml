@@ -1,6 +1,6 @@
 [package]
 name = "bytecon"
-version = "0.5.4"
+version = "0.5.5"
 edition = "2021"
 authors = ["Austin Heller"]
 description = "A trait for easily converting to-and-from an array of bytes."
@@ -25,7 +25,7 @@ glam = ["dep:glam"]
 
 [dependencies]
 avian3d = { version = "0.3", features = ["serialize"], optional = true }
-bevy = { version = "0.16", optional = true }
+bevy = { version = "0.16", features = ["serialize"], optional = true }
 bincode = { version = "1" }
 burn = { version = "0.14", optional = true }
 glam = { version = "0.29.3", optional = true }

@@ -45,7 +45,7 @@ impl ByteConverter for Collider {
     }
     fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
         let serialized_bytes = Vec::<u8>::extract_from_bytes(bytes, index)?;
-        Ok(bincode::deserialize::<Collider>(&serialized_bytes)?)
+        Ok(bincode::deserialize::<Self>(&serialized_bytes)?)
     }
 }
 
@@ -71,7 +71,7 @@ impl ByteConverter for ColliderConstructor {
     }
     fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
         let serialized_bytes = Vec::<u8>::extract_from_bytes(bytes, index)?;
-        Ok(bincode::deserialize::<ColliderConstructor>(&serialized_bytes)?)
+        Ok(bincode::deserialize::<Self>(&serialized_bytes)?)
     }
 }
 
@@ -149,7 +149,7 @@ impl ByteConverter for ColliderMassProperties {
     }
     fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
         let serialized_bytes = Vec::<u8>::extract_from_bytes(bytes, index)?;
-        Ok(bincode::deserialize::<ColliderMassProperties>(&serialized_bytes)?)
+        Ok(bincode::deserialize::<Self>(&serialized_bytes)?)
     }
 }
 
@@ -255,7 +255,7 @@ impl ByteConverter for ExternalForce {
     }
     fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
         let serialized_bytes = Vec::<u8>::extract_from_bytes(bytes, index)?;
-        Ok(bincode::deserialize::<ExternalForce>(&serialized_bytes)?)
+        Ok(bincode::deserialize::<Self>(&serialized_bytes)?)
     }
 }
 
@@ -267,7 +267,7 @@ impl ByteConverter for ExternalImpulse {
     }
     fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
         let serialized_bytes = Vec::<u8>::extract_from_bytes(bytes, index)?;
-        Ok(bincode::deserialize::<ExternalImpulse>(&serialized_bytes)?)
+        Ok(bincode::deserialize::<Self>(&serialized_bytes)?)
     }
 }
 
@@ -279,7 +279,7 @@ impl ByteConverter for ExternalTorque {
     }
     fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
         let serialized_bytes = Vec::<u8>::extract_from_bytes(bytes, index)?;
-        Ok(bincode::deserialize::<ExternalTorque>(&serialized_bytes)?)
+        Ok(bincode::deserialize::<Self>(&serialized_bytes)?)
     }
 }
 
