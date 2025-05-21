@@ -1907,7 +1907,7 @@ dependencies = [
 
 [[package]]
 name = "bytecon"
-version = "0.5.3"
+version = "0.5.4"
 dependencies = [
  "avian3d",
  "bevy",

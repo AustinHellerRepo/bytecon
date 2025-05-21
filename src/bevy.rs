@@ -874,7 +874,10 @@ pub trait BevyAssetIdentifier {
     fn from_identifier(world: &mut World, identifier: Self::TIdentifier) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized;
 }
 
-impl BevyAssetIdentifier for Handle<WireframeMaterial> {
+impl<T> BevyAssetIdentifier for Handle<T>
+where
+    T: Asset,
+{
     type TIdentifier = Uuid;
 
     fn get_identifier(&self, _world: &World) -> Result<Self::TIdentifier, Box<dyn Error + Send + Sync + 'static>> {
@@ -885,13 +888,16 @@ impl BevyAssetIdentifier for Handle<WireframeMaterial> {
     }
     fn from_identifier(world: &mut World, identifier: Self::TIdentifier) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
         let asset_id = AssetId::Uuid { uuid: identifier };
-        let mut assets = world.get_resource_mut::<Assets<WireframeMaterial>>().ok_or("Failed to get AssetServer.")?;
+        let mut assets = world.get_resource_mut::<Assets<T>>().ok_or("Failed to get AssetServer.")?;
         let handle = assets.get_strong_handle(asset_id).ok_or("Failed to find handle by UUID.")?;
         Ok(handle)
     }
 }
 
-impl ByteConverter for Handle<WireframeMaterial> {
+impl<T> ByteConverter for Handle<T>
+where
+    T: Asset,
+{
     fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> std::result::Result<(), Box<dyn Error + Send + Sync + 'static>> {
         let identifier = if WORLD.is_set() {
             WORLD.with(|world| {
