@@ -2199,6 +2199,32 @@ impl ByteConverter for WireframeConfig {
     }
 }
 
+impl ByteConverter for Visibility {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> std::result::Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        match self {
+            Self::Inherited => {
+                0u8.append_to_bytes(bytes)?;
+            },
+            Self::Hidden => {
+                1u8.append_to_bytes(bytes)?;
+            },
+            Self::Visible => {
+                2u8.append_to_bytes(bytes)?;
+            },
+        }
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> std::result::Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        let enum_variant_byte = u8::extract_from_bytes(bytes, index)?;
+        match enum_variant_byte {
+            0u8 => Ok(Self::Inherited),
+            1u8 => Ok(Self::Hidden),
+            2u8 => Ok(Self::Visible),
+            _ => Err("Unexpected enum variant byte.".into()),
+        }
+    }
+}
+
 pub struct BevyWorldRefSingleton(Infallible);
 
 impl BevyWorldRefSingleton {
