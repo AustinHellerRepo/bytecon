@@ -632,10 +632,49 @@ impl ByteConverter for Node {
 
 impl ByteConverter for ComputedNode {
     fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> std::result::Result<(), Box<dyn Error + Send + Sync + 'static>> {
-        todo!()
+        self.stack_index.append_to_bytes(bytes)?;
+        self.size.append_to_bytes(bytes)?;
+        self.content_size.append_to_bytes(bytes)?;
+        self.outline_width.append_to_bytes(bytes)?;
+        self.outline_offset.append_to_bytes(bytes)?;
+        self.unrounded_size.append_to_bytes(bytes)?;
+        self.border.append_to_bytes(bytes)?;
+        self.border_radius.append_to_bytes(bytes)?;
+        self.padding.append_to_bytes(bytes)?;
+        self.inverse_scale_factor.append_to_bytes(bytes)?;
+        Ok(())
     }
     fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> std::result::Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
-        todo!()
+        Ok(Self {
+            stack_index: u32::extract_from_bytes(bytes, index)?,
+            size: Vec2::extract_from_bytes(bytes, index)?,
+            content_size: Vec2::extract_from_bytes(bytes, index)?,
+            outline_width: f32::extract_from_bytes(bytes, index)?,
+            outline_offset: f32::extract_from_bytes(bytes, index)?,
+            unrounded_size: Vec2::extract_from_bytes(bytes, index)?,
+            border: BorderRect::extract_from_bytes(bytes, index)?,
+            border_radius: ResolvedBorderRadius::extract_from_bytes(bytes, index)?,
+            padding: BorderRect::extract_from_bytes(bytes, index)?,
+            inverse_scale_factor: f32::extract_from_bytes(bytes, index)?,
+        })
+    }
+}
+
+impl ByteConverter for BorderRect {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> std::result::Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        self.left.append_to_bytes(bytes)?;
+        self.right.append_to_bytes(bytes)?;
+        self.top.append_to_bytes(bytes)?;
+        self.bottom.append_to_bytes(bytes)?;
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> std::result::Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        Ok(Self {
+            left: f32::extract_from_bytes(bytes, index)?,
+            right: f32::extract_from_bytes(bytes, index)?,
+            top: f32::extract_from_bytes(bytes, index)?,
+            bottom: f32::extract_from_bytes(bytes, index)?,
+        })
     }
 }
 
