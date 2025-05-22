@@ -1,4 +1,4 @@
-use bevy::{asset::uuid::Uuid, input::{keyboard::NativeKeyCode, mouse::MouseScrollUnit}, math::Affine3, pbr::wireframe::{ExtractedWireframeColor, Mesh3dWireframe, NoWireframe, Wireframe, WireframeColor, WireframeConfig, WireframeMaterial}, prelude::*, render::render_resource::AsBindGroupShaderType};
+use bevy::{asset::uuid::Uuid, input::{keyboard::NativeKeyCode, mouse::MouseScrollUnit}, math::Affine3, pbr::wireframe::{ExtractedWireframeColor, Mesh3dWireframe, NoWireframe, Wireframe, WireframeColor, WireframeConfig, WireframeMaterial}, prelude::*, render::render_resource::AsBindGroupShaderType, text::{FontSmoothing, LineHeight}};
 use crate::ByteConverter;
 use std::{convert::Infallible, error::Error};
 
@@ -740,6 +740,163 @@ impl ByteConverter for TextShadow {
             offset: Vec2::extract_from_bytes(bytes, index)?,
             color: Color::extract_from_bytes(bytes, index)?,
         })
+    }
+}
+
+impl ByteConverter for TextFont {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> std::result::Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        self.font.append_to_bytes(bytes)?;
+        self.font_size.append_to_bytes(bytes)?;
+        self.line_height.append_to_bytes(bytes)?;
+        self.font_smoothing.append_to_bytes(bytes)?;
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> std::result::Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        Ok(Self {
+            font: Handle::<Font>::extract_from_bytes(bytes, index)?,
+            font_size: f32::extract_from_bytes(bytes, index)?,
+            line_height: LineHeight::extract_from_bytes(bytes, index)?,
+            font_smoothing: FontSmoothing::extract_from_bytes(bytes, index)?,
+        })
+    }
+}
+
+impl ByteConverter for LineHeight {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> std::result::Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        match self {
+            Self::Px(value) => {
+                0u8.append_to_bytes(bytes)?;
+                value.append_to_bytes(bytes)?;
+            },
+            Self::RelativeToFont(value) => {
+                1u8.append_to_bytes(bytes)?;
+                value.append_to_bytes(bytes)?;
+            },
+        }
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> std::result::Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        let enum_variant_byte = u8::extract_from_bytes(bytes, index)?;
+        match enum_variant_byte {
+            0u8 => Ok(Self::Px(f32::extract_from_bytes(bytes, index)?)),
+            1u8 => Ok(Self::RelativeToFont(f32::extract_from_bytes(bytes, index)?)),
+            _ => Err("Unexpected enum variant byte.".into()),
+        }
+    }
+}
+
+impl ByteConverter for FontSmoothing {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> std::result::Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        match self {
+            Self::None => {
+                0u8.append_to_bytes(bytes)?;
+            },
+            Self::AntiAliased => {
+                1u8.append_to_bytes(bytes)?;
+            },
+        }
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> std::result::Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        let enum_variant_byte = u8::extract_from_bytes(bytes, index)?;
+        match enum_variant_byte {
+            0u8 => Ok(Self::None),
+            1u8 => Ok(Self::AntiAliased),
+            _ => Err("Unexpected enum variant byte.".into()),
+        }
+    }
+}
+
+impl ByteConverter for Button {
+    fn append_to_bytes(&self, _bytes: &mut Vec<u8>) -> std::result::Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(_bytes: &'a TBytes, _index: &mut usize) -> std::result::Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        Ok(Self)
+    }
+}
+
+impl ByteConverter for TextLayout {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> std::result::Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        self.justify.append_to_bytes(bytes)?;
+        self.linebreak.append_to_bytes(bytes)?;
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> std::result::Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        Ok(Self {
+            justify: JustifyText::extract_from_bytes(bytes, index)?,
+            linebreak: LineBreak::extract_from_bytes(bytes, index)?,
+        })
+    }
+}
+
+impl ByteConverter for JustifyText {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> std::result::Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        match self {
+            Self::Left => {
+                0u8.append_to_bytes(bytes)?;
+            },
+            Self::Center => {
+                1u8.append_to_bytes(bytes)?;
+            },
+            Self::Right => {
+                2u8.append_to_bytes(bytes)?;
+            },
+            Self::Justified => {
+                3u8.append_to_bytes(bytes)?;
+            },
+        }
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> std::result::Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        let enum_variant_byte = u8::extract_from_bytes(bytes, index)?;
+        match enum_variant_byte {
+            0u8 => Ok(Self::Left),
+            1u8 => Ok(Self::Center),
+            2u8 => Ok(Self::Right),
+            3u8 => Ok(Self::Justified),
+            _ => Err("Unexpected enum variant byte.".into()),
+        }
+    }
+}
+
+impl ByteConverter for LineBreak {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> std::result::Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        match self {
+            Self::WordBoundary => {
+                0u8.append_to_bytes(bytes)?;
+            },
+            Self::AnyCharacter => {
+                1u8.append_to_bytes(bytes)?;
+            },
+            Self::WordOrCharacter => {
+                2u8.append_to_bytes(bytes)?;
+            },
+            Self::NoWrap => {
+                3u8.append_to_bytes(bytes)?;
+            }
+        }
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> std::result::Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        let enum_variant_byte = u8::extract_from_bytes(bytes, index)?;
+        match enum_variant_byte {
+            0u8 => Ok(Self::WordBoundary),
+            1u8 => Ok(Self::AnyCharacter),
+            2u8 => Ok(Self::WordOrCharacter),
+            3u8 => Ok(Self::NoWrap),
+            _ => Err("Unexpected enum variant byte.".into()),
+        }
+    }
+}
+
+impl ByteConverter for TextSpan {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> std::result::Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        self.0.append_to_bytes(bytes)?;
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> std::result::Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        Ok(Self(String::extract_from_bytes(bytes, index)?))
     }
 }
 
