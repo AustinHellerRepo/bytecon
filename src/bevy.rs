@@ -1,4 +1,4 @@
-use bevy::{asset::uuid::Uuid, input::{keyboard::NativeKeyCode, mouse::MouseScrollUnit}, math::Affine3, pbr::wireframe::{ExtractedWireframeColor, Mesh3dWireframe, NoWireframe, Wireframe, WireframeColor, WireframeConfig, WireframeMaterial}, prelude::*, render::render_resource::AsBindGroupShaderType, text::{FontSmoothing, LineHeight}, ui::FocusPolicy};
+use bevy::{asset::uuid::Uuid, input::{keyboard::NativeKeyCode, mouse::MouseScrollUnit}, math::Affine3, pbr::wireframe::{ExtractedWireframeColor, Mesh3dWireframe, NoWireframe, Wireframe, WireframeColor, WireframeConfig, WireframeMaterial}, prelude::*, text::{FontSmoothing, LineHeight}, ui::{FocusPolicy, RelativeCursorPosition}};
 use crate::ByteConverter;
 use std::{convert::Infallible, error::Error};
 
@@ -2257,6 +2257,46 @@ impl ByteConverter for ScrollPosition {
         Ok(Self {
             offset_x: f32::extract_from_bytes(bytes, index)?,
             offset_y: f32::extract_from_bytes(bytes, index)?,
+        })
+    }
+}
+
+impl ByteConverter for Interaction {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> std::result::Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        match self {
+            Self::Pressed => {
+                0u8.append_to_bytes(bytes)?;
+            },
+            Self::Hovered => {
+                1u8.append_to_bytes(bytes)?;
+            },
+            Self::None => {
+                2u8.append_to_bytes(bytes)?;
+            }
+        }
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> std::result::Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        let enum_variant_byte = u8::extract_from_bytes(bytes, index)?;
+        match enum_variant_byte {
+            0u8 => Ok(Self::Pressed),
+            1u8 => Ok(Self::Hovered),
+            2u8 => Ok(Self::None),
+            _ => Err("Unexpected enum variant byte.".into()),
+        }
+    }
+}
+
+impl ByteConverter for RelativeCursorPosition {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> std::result::Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        self.normalized_visible_node_rect.append_to_bytes(bytes)?;
+        self.normalized.append_to_bytes(bytes)?;
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> std::result::Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        Ok(Self {
+            normalized_visible_node_rect: Rect::extract_from_bytes(bytes, index)?,
+            normalized: Option::<Vec2>::extract_from_bytes(bytes, index)?,
         })
     }
 }
