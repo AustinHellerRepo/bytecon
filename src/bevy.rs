@@ -678,6 +678,16 @@ impl ByteConverter for BorderRect {
     }
 }
 
+impl ByteConverter for ChildOf {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> std::result::Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        self.0.append_to_bytes(bytes)?;
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> std::result::Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        Ok(Self(Entity::extract_from_bytes(bytes, index)?))
+    }
+}
+
 impl ByteConverter for UiTargetCamera {
     fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> std::result::Result<(), Box<dyn Error + Send + Sync + 'static>> {
         self.0.append_to_bytes(bytes)?;
