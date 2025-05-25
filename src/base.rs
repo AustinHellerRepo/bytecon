@@ -1,5 +1,5 @@
 use crate::{get_multiple_bytes, get_single_byte, ByteConverter, ByteConverterError, ByteStreamReader, ByteStreamWriter};
-use std::{cell::RefCell, collections::{HashMap, VecDeque}, error::Error, ffi::CString, path::PathBuf, rc::Rc, sync::{Arc, Mutex, RwLock}};
+use std::{cell::RefCell, collections::{HashMap, VecDeque}, error::Error, ffi::CString, path::PathBuf, rc::Rc, sync::{Arc, Mutex, RwLock}, time::Duration};
 
 impl ByteConverter for () {
     #[inline(always)]
@@ -847,3 +847,17 @@ impl ByteConverter for PathBuf {
 //        todo!();
 //    }
 //}
+
+impl ByteConverter for Duration {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        self.as_secs().append_to_bytes(bytes)?;
+        self.subsec_nanos().append_to_bytes(bytes)?;
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        Ok(Self::new(
+            u64::extract_from_bytes(bytes, index)?,
+            u32::extract_from_bytes(bytes, index)?,
+        ))
+    }
+}

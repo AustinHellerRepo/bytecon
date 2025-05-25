@@ -1,6 +1,6 @@
-use bevy::{asset::uuid::Uuid, input::{keyboard::NativeKeyCode, mouse::MouseScrollUnit}, math::Affine3, pbr::wireframe::{ExtractedWireframeColor, Mesh3dWireframe, NoWireframe, Wireframe, WireframeColor, WireframeConfig, WireframeMaterial}, prelude::*, text::{FontSmoothing, LineHeight}, ui::{FocusPolicy, RelativeCursorPosition}};
+use bevy::{asset::uuid::Uuid, input::{keyboard::NativeKeyCode, mouse::MouseScrollUnit}, math::{Affine3, FloatOrd}, pbr::wireframe::{ExtractedWireframeColor, Mesh3dWireframe, NoWireframe, Wireframe, WireframeColor, WireframeConfig, WireframeMaterial}, picking::{backend::HitData, pointer::{Location, PointerId, PointerLocation}}, prelude::*, render::camera::{ImageRenderTarget, ManualTextureViewHandle, NormalizedRenderTarget}, text::{FontSmoothing, LineHeight}, ui::{FocusPolicy, RelativeCursorPosition}, window::NormalizedWindowRef};
 use crate::ByteConverter;
-use std::{convert::Infallible, error::Error};
+use std::{convert::Infallible, error::Error, time::Duration};
 
 impl ByteConverter for KeyCode {
     #[inline(always)]
@@ -2297,6 +2297,418 @@ impl ByteConverter for RelativeCursorPosition {
         Ok(Self {
             normalized_visible_node_rect: Rect::extract_from_bytes(bytes, index)?,
             normalized: Option::<Vec2>::extract_from_bytes(bytes, index)?,
+        })
+    }
+}
+
+impl<T> ByteConverter for Pointer<T>
+where
+    T: std::fmt::Debug + Clone + Reflect + ByteConverter,
+{
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> std::result::Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        self.target.append_to_bytes(bytes)?;
+        self.pointer_id.append_to_bytes(bytes)?;
+        self.pointer_location.append_to_bytes(bytes)?;
+        self.event.append_to_bytes(bytes)?;
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> std::result::Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        Ok(Self {
+            target: Entity::extract_from_bytes(bytes, index)?,
+            pointer_id: PointerId::extract_from_bytes(bytes, index)?,
+            pointer_location: Location::extract_from_bytes(bytes, index)?,
+            event: T::extract_from_bytes(bytes, index)?,
+        })
+    }
+}
+
+impl ByteConverter for PointerId {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> std::result::Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        match self {
+            Self::Mouse => {
+                0u8.append_to_bytes(bytes)?;
+            },
+            Self::Touch(touch_id) => {
+                1u8.append_to_bytes(bytes)?;
+                touch_id.append_to_bytes(bytes)?;
+            },
+            Self::Custom(custom_uuid) => {
+                2u8.append_to_bytes(bytes)?;
+                custom_uuid.append_to_bytes(bytes)?;
+            }
+        }
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> std::result::Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        let enum_variant_byte = u8::extract_from_bytes(bytes, index)?;
+        match enum_variant_byte {
+            0u8 => Ok(Self::Mouse),
+            1u8 => Ok(Self::Touch(u64::extract_from_bytes(bytes, index)?)),
+            2u8 => Ok(Self::Custom(Uuid::extract_from_bytes(bytes, index)?)),
+            _ => Err("Unexpected enum variant byte.".into()),
+        }
+    }
+}
+
+impl ByteConverter for Location {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> std::result::Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        self.target.append_to_bytes(bytes)?;
+        self.position.append_to_bytes(bytes)?;
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> std::result::Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        Ok(Self {
+            target: NormalizedRenderTarget::extract_from_bytes(bytes, index)?,
+            position: Vec2::extract_from_bytes(bytes, index)?,
+        })
+    }
+}
+
+impl ByteConverter for NormalizedRenderTarget {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> std::result::Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        match self {
+            Self::Window(normalized_window_ref) => {
+                0u8.append_to_bytes(bytes)?;
+                normalized_window_ref.append_to_bytes(bytes)?;
+            },
+            Self::Image(image_render_target) => {
+                1u8.append_to_bytes(bytes)?;
+                image_render_target.append_to_bytes(bytes)?;
+            },
+            Self::TextureView(manual_texture_view_handle) => {
+                2u8.append_to_bytes(bytes)?;
+                manual_texture_view_handle.append_to_bytes(bytes)?;
+            },
+        }
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> std::result::Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        let enum_variant_byte = u8::extract_from_bytes(bytes, index)?;
+        match enum_variant_byte {
+            0u8 => Ok(Self::Window(NormalizedWindowRef::extract_from_bytes(bytes, index)?)),
+            1u8 => Ok(Self::Image(ImageRenderTarget::extract_from_bytes(bytes, index)?)),
+            2u8 => Ok(Self::TextureView(ManualTextureViewHandle::extract_from_bytes(bytes, index)?)),
+            _ => Err("Unexpected enum variant byte.".into()),
+        }
+    }
+}
+
+impl ByteConverter for NormalizedWindowRef {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
+        let serialized_bytes = bincode::serialize(self)?;
+        serialized_bytes.append_to_bytes(bytes)?;
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> where Self: Sized {
+        let serialized_bytes = Vec::<u8>::extract_from_bytes(bytes, index)?;
+        Ok(bincode::deserialize::<Self>(&serialized_bytes)?)
+    }
+}
+
+impl ByteConverter for ImageRenderTarget {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> std::result::Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        self.handle.append_to_bytes(bytes)?;
+        self.scale_factor.append_to_bytes(bytes)?;
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> std::result::Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        Ok(Self {
+            handle: Handle::<Image>::extract_from_bytes(bytes, index)?,
+            scale_factor: FloatOrd::extract_from_bytes(bytes, index)?,
+        })
+    }
+}
+
+impl ByteConverter for FloatOrd {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> std::result::Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        self.0.append_to_bytes(bytes)?;
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> std::result::Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        Ok(Self(f32::extract_from_bytes(bytes, index)?))
+    }
+}
+
+impl ByteConverter for ManualTextureViewHandle {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> std::result::Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        self.0.append_to_bytes(bytes)?;
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> std::result::Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        Ok(Self(u32::extract_from_bytes(bytes, index)?))
+    }
+}
+
+impl ByteConverter for PointerLocation {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> std::result::Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        self.location.append_to_bytes(bytes)?;
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> std::result::Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        Ok(Self {
+            location: Option::<Location>::extract_from_bytes(bytes, index)?,
+        })
+    }
+}
+
+impl ByteConverter for HitData {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> std::result::Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        self.camera.append_to_bytes(bytes)?;
+        self.depth.append_to_bytes(bytes)?;
+        self.position.append_to_bytes(bytes)?;
+        self.normal.append_to_bytes(bytes)?;
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> std::result::Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        Ok(Self {
+            camera: Entity::extract_from_bytes(bytes, index)?,
+            depth: f32::extract_from_bytes(bytes, index)?,
+            position: Option::<Vec3>::extract_from_bytes(bytes, index)?,
+            normal: Option::<Vec3>::extract_from_bytes(bytes, index)?,
+        })
+    }
+}
+
+impl ByteConverter for Cancel {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> std::result::Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        self.hit.append_to_bytes(bytes)?;
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> std::result::Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        Ok(Self {
+            hit: HitData::extract_from_bytes(bytes, index)?,
+        })
+    }
+}
+
+impl ByteConverter for Over {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> std::result::Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        self.hit.append_to_bytes(bytes)?;
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> std::result::Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        Ok(Self {
+            hit: HitData::extract_from_bytes(bytes, index)?,
+        })
+    }
+}
+
+impl ByteConverter for Out {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> std::result::Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        self.hit.append_to_bytes(bytes)?;
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> std::result::Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        Ok(Self {
+            hit: HitData::extract_from_bytes(bytes, index)?,
+        })
+    }
+}
+
+impl ByteConverter for PointerButton {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> std::result::Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        match self {
+            Self::Primary => {
+                0u8.append_to_bytes(bytes)?;
+            },
+            Self::Secondary => {
+                1u8.append_to_bytes(bytes)?;
+            },
+            Self::Middle => {
+                2u8.append_to_bytes(bytes)?;
+            },
+        }
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> std::result::Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        let enum_variant_byte = u8::extract_from_bytes(bytes, index)?;
+        match enum_variant_byte {
+            0u8 => Ok(Self::Primary),
+            1u8 => Ok(Self::Secondary),
+            2u8 => Ok(Self::Middle),
+            _ => Err("Unexpected enum variant byte.".into()),
+        }
+    }
+}
+
+impl ByteConverter for Pressed {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> std::result::Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        self.button.append_to_bytes(bytes)?;
+        self.hit.append_to_bytes(bytes)?;
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> std::result::Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        Ok(Self {
+            button: PointerButton::extract_from_bytes(bytes, index)?,
+            hit: HitData::extract_from_bytes(bytes, index)?,
+        })
+    }
+}
+
+impl ByteConverter for Released {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> std::result::Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        self.button.append_to_bytes(bytes)?;
+        self.hit.append_to_bytes(bytes)?;
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> std::result::Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        Ok(Self {
+            button: PointerButton::extract_from_bytes(bytes, index)?,
+            hit: HitData::extract_from_bytes(bytes, index)?,
+        })
+    }
+}
+
+impl ByteConverter for Click {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> std::result::Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        self.button.append_to_bytes(bytes)?;
+        self.hit.append_to_bytes(bytes)?;
+        self.duration.append_to_bytes(bytes)?;
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> std::result::Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        Ok(Self {
+            button: PointerButton::extract_from_bytes(bytes, index)?,
+            hit: HitData::extract_from_bytes(bytes, index)?,
+            duration: Duration::extract_from_bytes(bytes, index)?,
+        })
+    }
+}
+
+impl ByteConverter for Move {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> std::result::Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        self.hit.append_to_bytes(bytes)?;
+        self.delta.append_to_bytes(bytes)?;
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> std::result::Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        Ok(Self {
+            hit: HitData::extract_from_bytes(bytes, index)?,
+            delta: Vec2::extract_from_bytes(bytes, index)?,
+        })
+    }
+}
+
+impl ByteConverter for DragStart {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> std::result::Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        self.button.append_to_bytes(bytes)?;
+        self.hit.append_to_bytes(bytes)?;
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> std::result::Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        Ok(Self {
+            button: PointerButton::extract_from_bytes(bytes, index)?,
+            hit: HitData::extract_from_bytes(bytes, index)?,
+        })
+    }
+}
+
+impl ByteConverter for Drag {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> std::result::Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        self.button.append_to_bytes(bytes)?;
+        self.distance.append_to_bytes(bytes)?;
+        self.delta.append_to_bytes(bytes)?;
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> std::result::Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        Ok(Self {
+            button: PointerButton::extract_from_bytes(bytes, index)?,
+            distance: Vec2::extract_from_bytes(bytes, index)?,
+            delta: Vec2::extract_from_bytes(bytes, index)?,
+        })
+    }
+}
+
+impl ByteConverter for DragEnd {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> std::result::Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        self.button.append_to_bytes(bytes)?;
+        self.distance.append_to_bytes(bytes)?;
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> std::result::Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        Ok(Self {
+            button: PointerButton::extract_from_bytes(bytes, index)?,
+            distance: Vec2::extract_from_bytes(bytes, index)?,
+        })
+    }
+}
+
+impl ByteConverter for DragEnter {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> std::result::Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        self.button.append_to_bytes(bytes)?;
+        self.dragged.append_to_bytes(bytes)?;
+        self.hit.append_to_bytes(bytes)?;
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> std::result::Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        Ok(Self {
+            button: PointerButton::extract_from_bytes(bytes, index)?,
+            dragged: Entity::extract_from_bytes(bytes, index)?,
+            hit: HitData::extract_from_bytes(bytes, index)?,
+        })
+    }
+}
+
+impl ByteConverter for DragLeave {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> std::result::Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        self.button.append_to_bytes(bytes)?;
+        self.dragged.append_to_bytes(bytes)?;
+        self.hit.append_to_bytes(bytes)?;
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> std::result::Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        Ok(Self {
+            button: PointerButton::extract_from_bytes(bytes, index)?,
+            dragged: Entity::extract_from_bytes(bytes, index)?,
+            hit: HitData::extract_from_bytes(bytes, index)?,
+        })
+    }
+}
+
+impl ByteConverter for DragDrop {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> std::result::Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        self.button.append_to_bytes(bytes)?;
+        self.dropped.append_to_bytes(bytes)?;
+        self.hit.append_to_bytes(bytes)?;
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> std::result::Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        Ok(Self {
+            button: PointerButton::extract_from_bytes(bytes, index)?,
+            dropped: Entity::extract_from_bytes(bytes, index)?,
+            hit: HitData::extract_from_bytes(bytes, index)?,
+        })
+    }
+}
+
+impl ByteConverter for DragEntry {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> std::result::Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        self.start_pos.append_to_bytes(bytes)?;
+        self.latest_pos.append_to_bytes(bytes)?;
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> std::result::Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        Ok(Self {
+            start_pos: Vec2::extract_from_bytes(bytes, index)?,
+            latest_pos: Vec2::extract_from_bytes(bytes, index)?,
+        })
+    }
+}
+
+impl ByteConverter for Scroll {
+    fn append_to_bytes(&self, bytes: &mut Vec<u8>) -> std::result::Result<(), Box<dyn Error + Send + Sync + 'static>> {
+        self.unit.append_to_bytes(bytes)?;
+        self.x.append_to_bytes(bytes)?;
+        self.y.append_to_bytes(bytes)?;
+        self.hit.append_to_bytes(bytes)?;
+        Ok(())
+    }
+    fn extract_from_bytes<'a, TBytes: AsRef<[u8]>>(bytes: &'a TBytes, index: &mut usize) -> std::result::Result<Self, Box<dyn Error + Send + Sync + 'static>> where Self: Sized {
+        Ok(Self {
+            unit: MouseScrollUnit::extract_from_bytes(bytes, index)?,
+            x: f32::extract_from_bytes(bytes, index)?,
+            y: f32::extract_from_bytes(bytes, index)?,
+            hit: HitData::extract_from_bytes(bytes, index)?,
         })
     }
 }
